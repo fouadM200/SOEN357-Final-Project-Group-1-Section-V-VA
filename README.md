@@ -4,7 +4,6 @@
 
 | Name                | Student ID |
 | ------------------- | ---------- |
-
 | Rami Al Najem       | 40242034   |
 | Fouad Meida         | 40249310   |
 | Uroosa Lakhani      | 40227274   |
