@@ -75,10 +75,10 @@ const moveDirectories = async (userInput) => {
     await fs.promises.mkdir(newAppDirPath, { recursive: true });
     console.log("\n📁 New /app directory created.");
 
-    // Create index.tsx
-    const indexPath = path.join(newAppDirPath, "index.tsx");
+    // Create home.tsx
+    const indexPath = path.join(newAppDirPath, "home.tsx");
     await fs.promises.writeFile(indexPath, indexContent);
-    console.log("📄 app/index.tsx created.");
+    console.log("📄 app/home.tsx created.");
 
     // Create _layout.tsx
     const layoutPath = path.join(newAppDirPath, "_layout.tsx");
