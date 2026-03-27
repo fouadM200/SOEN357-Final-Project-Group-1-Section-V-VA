@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const USERS_KEY = "fitfuel_users";
+const CURRENT_USER_KEY = "fitfuel_current_user";
 
 export type User = {
     firstName: string;
@@ -27,14 +28,15 @@ export const signupUser = async (
 ): Promise<{ success: boolean; message?: string }> => {
     const users = await getUsers();
 
-    const emailExists = users.find(u => u.email === newUser.email);
+    const emailExists = users.find(
+        (u) => u.email.toLowerCase() === newUser.email.toLowerCase()
+    );
 
     if (emailExists) {
         return { success: false, message: "User already exists" };
     }
 
     users.push(newUser);
-
     await saveUsers(users);
 
     return { success: true };
@@ -47,14 +49,27 @@ export const loginUser = async (
     const users = await getUsers();
 
     const user = users.find(
-        u => u.email === email && u.password === password
+        (u) =>
+            u.email.toLowerCase() === email.toLowerCase() &&
+            u.password === password
     );
 
     if (!user) {
         return { success: false, message: "Invalid credentials" };
     }
 
+    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+
     return { success: true, user };
+};
+
+export const getCurrentUser = async (): Promise<User | null> => {
+    const data = await AsyncStorage.getItem(CURRENT_USER_KEY);
+    return data ? JSON.parse(data) : null;
+};
+
+export const logoutUser = async (): Promise<void> => {
+    await AsyncStorage.removeItem(CURRENT_USER_KEY);
 };
 
 export const resetPassword = async (
@@ -63,7 +78,9 @@ export const resetPassword = async (
 ): Promise<{ success: boolean; message?: string }> => {
     const users = await getUsers();
 
-    const index = users.findIndex(u => u.email === email);
+    const index = users.findIndex(
+        (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
 
     if (index === -1) {
         return { success: false, message: "User not found" };
@@ -73,9 +90,19 @@ export const resetPassword = async (
 
     await saveUsers(users);
 
+    const currentUser = await getCurrentUser();
+    if (
+        currentUser &&
+        currentUser.email.toLowerCase() === email.toLowerCase()
+    ) {
+        currentUser.password = newPassword;
+        await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+    }
+
     return { success: true };
 };
 
 export const clearAllUsers = async (): Promise<void> => {
     await AsyncStorage.removeItem(USERS_KEY);
+    await AsyncStorage.removeItem(CURRENT_USER_KEY);
 };
