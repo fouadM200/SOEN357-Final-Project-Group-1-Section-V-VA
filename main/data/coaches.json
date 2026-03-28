@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1",
+    "name": "Andy Griffiths",
+    "image": "",
+    "rating": 4.5,
+    "price": 35,
+    "languages": ["English"],
+    "description": "Certified personal trainer focused on simple, effective workout plans and long-term fitness progress.",
+    "biography": "I am a dedicated personal trainer with over 8 years of experience helping people transform their lifestyle and achieve their fitness goals. Throughout my coaching journey, I have supported many clients with fat loss, muscle gain, strength improvement, and building healthier daily habits. My approach focuses on personalized guidance, motivation, and creating realistic workout plans that match each person’s level and goals. I believe fitness should be simple, sustainable, and enjoyable, and I am passionate about helping others become stronger, more confident, and more consistent over time.",
+    "testimonials": [
+      {
+        "name": "Sarah Mitchell",
+        "text": "Andy helped me stay consistent with my workouts and I started seeing real progress after just a few weeks."
+      },
+      {
+        "name": "Jason Carter",
+        "text": "His coaching style is very motivating and supportive. I was able to lose fat and feel much more confident."
+      },
+      {
+        "name": "Alejandro Rodriguez",
+        "text": "The workout plans were simple, personalized, and easy to follow. I gained strength and built better habits."
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Jessica Harb",
+    "image": "",
+    "rating": 4.7,
+    "price": 55,
+    "languages": ["English", "French", "Arabic"],
+    "description": "Certified personal trainer dedicated to creating practical and effective workout plans that help clients build strength and stay motivated.",
+    "biography": "I am a dedicated personal trainer with over 5 years of experience helping people transform their lifestyle and achieve their fitness goals. Throughout my coaching journey, I have supported many clients with fat loss, muscle gain, strength improvement, and building healthier daily habits. My approach focuses on personalized guidance, motivation, and creating realistic workout plans that match each person’s level and goals. I believe fitness should be simple, sustainable, and enjoyable, and I am passionate about helping others become stronger, more confident, and more consistent over time.",
+    "testimonials": [
+      {
+        "name": "Mike James",
+        "text": "Jessica helped me stay consistent with my workouts and I started seeing real progress after just a few weeks."
+      },
+      {
+        "name": "Jessy Winston",
+        "text": "Her coaching style is very motivating and supportive. I was able to lose fat and feel much more confident."
+      },
+      {
+        "name": "Carlos Tevez",
+        "text": "The workout plans were simple, personalized, and easy to follow. I gained strength and built better habits."
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Amadou Ba",
+    "image": "",
+    "rating": 4.2,
+    "price": 40,
+    "languages": ["English", "French"],
+    "description": "Certified personal trainer specializing in practical, results-driven workout programs designed to support steady progress.",
+    "biography": "I am a dedicated personal trainer with over 12 years of experience helping people transform their lifestyle and achieve their fitness goals. Throughout my coaching journey, I have supported many clients with fat loss, muscle gain, strength improvement, and building healthier daily habits. My approach focuses on personalized guidance, motivation, and creating realistic workout plans that match each person’s level and goals. I believe fitness should be simple, sustainable, and enjoyable, and I am passionate about helping others become stronger, more confident, and more consistent over time.",
+    "testimonials": [
+      {
+        "name": "Bubakar Abdul-Rahman",
+        "text": "Amadou helped me stay consistent with my workouts and I started seeing real progress after just a few weeks."
+      },
+      {
+        "name": "Selena Miller",
+        "text": "His coaching style is very motivating and supportive. I was able to lose fat and feel much more confident."
+      },
+      {
+        "name": "Leonardo Bonucci",
+        "text": "The workout plans were simple, personalized, and easy to follow. I gained strength and built better habits."
+      }
+    ]
+  }
+]
