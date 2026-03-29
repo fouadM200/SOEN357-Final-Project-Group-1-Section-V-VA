@@ -2,38 +2,39 @@ import { useMemo, useState } from "react";
 import {
     FlatList,
     Image,
-    ImageSourcePropType,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
+    Modal,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import coachesData from "../../data/coaches.json";
+import { useCoaches, useSubscribedCoachIds, unsubscribeFromCoach } from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
 import FitFuelLogo from "../../components/FitFuelLogo";
-
-const coachImages: Record<string, ImageSourcePropType> = {
-    "1": require("../../assets/images/coaches/Andy-Griffiths.png"),
-    "2": require("../../assets/images/coaches/Jessica-Harb.png"),
-    "3": require("../../assets/images/coaches/Amadou-Ba.png"),
-};
+import { UnsubscribeModal } from "../../components/modals/UnsubscribeModal";
+import { UnsubscribeSuccessModal } from "../../components/modals/UnsubscribeSuccessModal";
 
 export default function CoachPage() {
     const [searchText, setSearchText] = useState("");
     const [selectedRate, setSelectedRate] = useState<string>("All");
     const [selectedPrice, setSelectedPrice] = useState<string>("All");
     const [selectedLanguage, setSelectedLanguage] = useState<string>("All");
+    const [viewMode, setViewMode] = useState<"All" | "Subscriptions">("All");
+    const [isUnsubscribeModalVisible, setIsUnsubscribeModalVisible] = useState(false);
+    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+    const [selectedCoachToUnsubscribe, setSelectedCoachToUnsubscribe] = useState<Coach | null>(null);
 
-    const coaches = useMemo(() => {
-        return (coachesData as Coach[]).map((coach) => ({
-            ...coach,
-            image: coachImages[coach.id],
-        }));
-    }, []);
+    const coaches = useCoaches();
+    const subscribedCoachIds = useSubscribedCoachIds();
+
+    const subscribedCoaches = useMemo(() => {
+        return coaches.filter(coach => subscribedCoachIds.includes(coach.id));
+    }, [coaches, subscribedCoachIds]);
 
     const filteredCoaches = useMemo(() => {
         return coaches.filter((coach) => {
@@ -69,59 +70,125 @@ export default function CoachPage() {
             <View style={styles.container}>
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle}>Online Coaching</Text>
+                        <View style={styles.headerLeft}>
+                            <Text style={styles.headerTitle}>Online Coaching</Text>
+                            <View style={styles.headerButtons}>
+                                <TouchableOpacity style={styles.headerButton}>
+                                    <Ionicons name="mail-outline" size={18} color="#1DA1F2" />
+                                    <Text style={styles.headerButtonText}>Messages</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.headerButton, viewMode === "Subscriptions" && styles.activeHeaderButton]}
+                                    onPress={() => setViewMode(viewMode === "Subscriptions" ? "All" : "Subscriptions")}
+                                >
+                                    <Text style={[styles.headerButtonText, viewMode === "Subscriptions" && styles.activeHeaderButtonText]}>Subscriptions</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                         <FitFuelLogo width={150} height={150} opacity={1} />
                     </View>
                 </View>
 
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color="#999" />
-                    <TextInput
-                        placeholder="Search for an online fitness coach"
-                        placeholderTextColor="#999"
-                        style={styles.searchInput}
-                        value={searchText}
-                        onChangeText={setSearchText}
-                    />
-                </View>
+                {viewMode === "All" ? (
+                    <>
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={20} color="#999" />
+                            <TextInput
+                                placeholder="Search for an online fitness coach"
+                                placeholderTextColor="#999"
+                                style={styles.searchInput}
+                                value={searchText}
+                                onChangeText={setSearchText}
+                            />
+                        </View>
 
-                <View style={styles.filtersRow}>
-                    <FilterButton
-                        label={`Rate: ${selectedRate}`}
-                        onPress={() =>
-                            cycleValue(selectedRate, ["All", "4", "4.5"], setSelectedRate)
-                        }
-                    />
-                    <FilterButton
-                        label={`Price: ${selectedPrice}`}
-                        onPress={() =>
-                            cycleValue(
-                                selectedPrice,
-                                ["All", "0-40", "41-60", "61+"],
-                                setSelectedPrice
-                            )
-                        }
-                    />
-                    <FilterButton
-                        label={`Language: ${selectedLanguage}`}
-                        onPress={() =>
-                            cycleValue(
-                                selectedLanguage,
-                                ["All", "English", "French", "Arabic"],
-                                setSelectedLanguage
-                            )
-                        }
-                    />
-                </View>
+                        <View style={styles.filtersRow}>
+                            <FilterButton
+                                label={`Rate: ${selectedRate}`}
+                                onPress={() =>
+                                    cycleValue(selectedRate, ["All", "4", "4.5"], setSelectedRate)
+                                }
+                            />
+                            <FilterButton
+                                label={`Price: ${selectedPrice}`}
+                                onPress={() =>
+                                    cycleValue(
+                                        selectedPrice,
+                                        ["All", "0-40", "41-60", "61+"],
+                                        setSelectedPrice
+                                    )
+                                }
+                            />
+                            <FilterButton
+                                label={`Language: ${selectedLanguage}`}
+                                onPress={() =>
+                                    cycleValue(
+                                        selectedLanguage,
+                                        ["All", "English", "French", "Arabic"],
+                                        setSelectedLanguage
+                                    )
+                                }
+                            />
+                        </View>
 
-                <FlatList
-                    data={filteredCoaches}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={({ item }) => <CoachCard coach={item} />}
-                    showsVerticalScrollIndicator={false}
-                />
+                        <FlatList
+                            data={filteredCoaches}
+                            keyExtractor={(item) => item.id}
+                            contentContainerStyle={styles.listContent}
+                            renderItem={({ item }) => <CoachCard coach={item} />}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </>
+                ) : (
+                    <>
+                        {subscribedCoaches.length > 0 ? (
+                            <FlatList
+                                data={subscribedCoaches}
+                                keyExtractor={(item) => item.id}
+                                contentContainerStyle={styles.listContent}
+                                renderItem={({ item }) => (
+                                    <SubscriptionCard 
+                                        coach={item} 
+                                        onUnsubscribe={() => {
+                                            setSelectedCoachToUnsubscribe(item);
+                                            setIsUnsubscribeModalVisible(true);
+                                        }} 
+                                    />
+                                )}
+                                showsVerticalScrollIndicator={false}
+                            />
+                        ) : (
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>Not subscribed to online coaching yet.</Text>
+                            </View>
+                        )}
+                    </>
+                )}
             </View>
+
+            <UnsubscribeModal 
+                visible={isUnsubscribeModalVisible}
+                coachName={selectedCoachToUnsubscribe?.name}
+                onCancel={() => {
+                    setIsUnsubscribeModalVisible(false);
+                }}
+                onUnsubscribe={() => {
+                    if (selectedCoachToUnsubscribe) {
+                        unsubscribeFromCoach(selectedCoachToUnsubscribe.id);
+                    }
+                    setIsUnsubscribeModalVisible(false);
+                    setIsSuccessModalVisible(true);
+                }}
+            />
+
+            <UnsubscribeSuccessModal 
+                visible={isSuccessModalVisible}
+                coachName={selectedCoachToUnsubscribe?.name}
+                onGoBack={() => {
+                    setIsSuccessModalVisible(false);
+                    setSelectedCoachToUnsubscribe(null);
+                }}
+            />
         </SafeAreaView>
     );
 }
@@ -190,6 +257,32 @@ function CoachCard({ coach }: { coach: Coach }) {
     );
 }
 
+function SubscriptionCard({ coach, onUnsubscribe }: { coach: Coach, onUnsubscribe: () => void }) {
+    return (
+        <View style={styles.card}>
+            <View style={styles.cardTopRow}>
+                <View style={styles.imagePlaceholder}>
+                    {coach.image ? (
+                        <Image source={coach.image} style={styles.coachImage} />
+                    ) : (
+                        <Ionicons name="person" size={32} color="#999" />
+                    )}
+                </View>
+
+                <View style={styles.cardInfo}>
+                    <Text style={styles.coachName}>{coach.name}</Text>
+                    <TouchableOpacity
+                        style={styles.unsubscribeButton}
+                        onPress={onUnsubscribe}
+                    >
+                        <Text style={styles.unsubscribeButtonText}>Unsubscribe</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
+}
+
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
@@ -201,20 +294,49 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: "#1DA1F2",
-        height: 210,
+        paddingBottom: 20,
     },
     headerContent: {
-        flex: 1,
         paddingHorizontal: 24,
+        paddingTop: 24,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         marginTop: 25,
     },
+    headerLeft: {
+        flex: 1,
+    },
     headerTitle: {
         color: "#fff",
         fontSize: 28,
         fontWeight: "800",
+        marginBottom: 15,
+    },
+    headerButtons: {
+        flexDirection: "column",
+        gap: 10,
+    },
+    headerButton: {
+        backgroundColor: "#fff",
+        borderRadius: 20,
+        paddingVertical: 6,
+        paddingHorizontal: 15,
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start",
+        gap: 5,
+    },
+    activeHeaderButton: {
+        backgroundColor: "#fff", // Active state also white but could be different
+    },
+    headerButtonText: {
+        color: "#1DA1F2",
+        fontSize: 14,
+        fontWeight: "700",
+    },
+    activeHeaderButtonText: {
+        color: "#1DA1F2",
     },
     searchContainer: {
         marginTop: 14,
@@ -337,5 +459,31 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 13,
         fontWeight: "700",
+    },
+    unsubscribeButton: {
+        backgroundColor: "#FF0000",
+        borderRadius: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        alignSelf: "flex-start",
+        marginTop: 10,
+    },
+    unsubscribeButtonText: {
+        color: "#fff",
+        fontSize: 13,
+        fontWeight: "800",
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: "flex-start",
+        alignItems: "center",
+        paddingTop: 40,
+        paddingHorizontal: 20,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#000",
+        textAlign: "center",
     },
 });
