@@ -10,28 +10,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import coachesData from "../../data/coaches.json";
-import { Coach } from "../../types/coach";
-
-const coachImages: Record<string, ImageSourcePropType> = {
-    "1": require("../../assets/images/coaches/Andy-Griffiths.png"),
-    "2": require("../../assets/images/coaches/Jessica-Harb.png"),
-    "3": require("../../assets/images/coaches/Amadou-Ba.png"),
-};
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useCoach } from "../../../hooks/useCoach";
 
 export default function CoachProfile() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
-
-    const coach = useMemo(() => {
-        const coaches = (coachesData as Coach[]).map((c) => ({
-            ...c,
-            image: coachImages[c.id],
-        }));
-
-        return coaches.find((c) => c.id === id);
-    }, [id]);
+    const coach = useCoach(id || "");
 
     if (!coach) {
         return (
@@ -105,7 +90,10 @@ export default function CoachProfile() {
                         </View>
                     ))}
 
-                    <TouchableOpacity style={styles.subscribeButton}>
+                    <TouchableOpacity 
+                        style={styles.subscribeButton}
+                        onPress={() => router.push(`/coach/${coach.id}/subscribe`)}
+                    >
                         <Text style={styles.subscribeButtonText}>Subscribe</Text>
                     </TouchableOpacity>
                 </View>
