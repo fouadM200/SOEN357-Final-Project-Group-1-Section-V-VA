@@ -91,8 +91,7 @@ const styles = StyleSheet.create({
         paddingTop: 80,
     },
     logoContainer: {
-        alignItems: "center",
-        marginBottom: 20,
+        alignItems: "center"
     },
     title: {
         fontSize: 36,
@@ -117,8 +116,9 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         marginTop: 10,
         textAlign: "right",
-        color: "#2D9CDB",
+        color: "#000000",
         fontWeight: "600",
+        textDecorationLine: "underline",
     },
     loginButton: {
         backgroundColor: "#2D9CDB",
@@ -139,8 +139,8 @@ const styles = StyleSheet.create({
     },
     helperText: {
         textAlign: "center",
-        marginTop: 18,
-        marginBottom: 8,
+        marginTop: 28,
+        marginBottom: 18,
         color: "#444",
     },
     signupButton: {

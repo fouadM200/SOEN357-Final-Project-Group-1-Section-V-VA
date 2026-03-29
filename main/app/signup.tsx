@@ -27,6 +27,12 @@ export default function SignupPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showSuccessCard, setShowSuccessCard] = useState(false);
 
+    const [heightUnit, setHeightUnit] = useState("ft");
+    const [weightUnit, setWeightUnit] = useState("lb");
+
+    const [showHeightDropdown, setShowHeightDropdown] = useState(false);
+    const [showWeightDropdown, setShowWeightDropdown] = useState(false);
+
     const handleSignup = async () => {
         if (
             !firstName ||
@@ -52,8 +58,8 @@ export default function SignupPage() {
             firstName,
             lastName,
             dateOfBirth,
-            height,
-            weight,
+            height: `${height} ${heightUnit}`,
+            weight: `${weight} ${weightUnit}`,
             phoneNumber,
             email,
             password,
@@ -69,7 +75,10 @@ export default function SignupPage() {
 
     return (
         <View style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView
+                contentContainerStyle={styles.container}
+                keyboardShouldPersistTaps="handled"
+            >
                 <FitFuelLogoBlue width={300} height={300} />
 
                 <Text style={styles.title}>Sign up</Text>
@@ -79,6 +88,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your first name"
+                        placeholderTextColor="#9A9A9A"
                         value={firstName}
                         onChangeText={setFirstName}
                     />
@@ -89,6 +99,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your last name"
+                        placeholderTextColor="#9A9A9A"
                         value={lastName}
                         onChangeText={setLastName}
                     />
@@ -99,29 +110,108 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#9A9A9A"
                         value={dateOfBirth}
                         onChangeText={setDateOfBirth}
                     />
                 </View>
 
-                <View style={styles.fieldContainer}>
+                <View style={[styles.fieldContainer, { zIndex: 20, elevation: 20 }]}>
                     <Text style={styles.label}>Height</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your height (ft/cm)"
-                        value={height}
-                        onChangeText={setHeight}
-                    />
+                    <View style={styles.inputRow}>
+                        <TextInput
+                            style={styles.inputWithDropdown}
+                            placeholder="Enter your height"
+                            placeholderTextColor="#9A9A9A"
+                            value={height}
+                            onChangeText={setHeight}
+                            keyboardType="numeric"
+                        />
+
+                        <TouchableOpacity
+                            style={styles.dropdownButton}
+                            onPress={() => {
+                                setShowHeightDropdown(!showHeightDropdown);
+                                setShowWeightDropdown(false);
+                            }}
+                        >
+                            <Text style={styles.dropdownButtonText}>{heightUnit}</Text>
+                            <Text style={styles.dropdownArrow}>⌄</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {showHeightDropdown && (
+                        <View style={styles.inlineDropdownMenu}>
+                            <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                    setHeightUnit("ft");
+                                    setShowHeightDropdown(false);
+                                }}
+                            >
+                                <Text style={styles.dropdownItemText}>ft</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                    setHeightUnit("cm");
+                                    setShowHeightDropdown(false);
+                                }}
+                            >
+                                <Text style={styles.dropdownItemText}>cm</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
-                <View style={styles.fieldContainer}>
+                <View style={[styles.fieldContainer, { zIndex: 10, elevation: 10 }]}>
                     <Text style={styles.label}>Weight</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your weight (lb/kg)"
-                        value={weight}
-                        onChangeText={setWeight}
-                    />
+                    <View style={styles.inputRow}>
+                        <TextInput
+                            style={styles.inputWithDropdown}
+                            placeholder="Enter your weight"
+                            placeholderTextColor="#9A9A9A"
+                            value={weight}
+                            onChangeText={setWeight}
+                            keyboardType="numeric"
+                        />
+
+                        <TouchableOpacity
+                            style={styles.dropdownButton}
+                            onPress={() => {
+                                setShowWeightDropdown(!showWeightDropdown);
+                                setShowHeightDropdown(false);
+                            }}
+                        >
+                            <Text style={styles.dropdownButtonText}>{weightUnit}</Text>
+                            <Text style={styles.dropdownArrow}>⌄</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {showWeightDropdown && (
+                        <View style={styles.inlineDropdownMenu}>
+                            <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                    setWeightUnit("lb");
+                                    setShowWeightDropdown(false);
+                                }}
+                            >
+                                <Text style={styles.dropdownItemText}>lb</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                    setWeightUnit("kg");
+                                    setShowWeightDropdown(false);
+                                }}
+                            >
+                                <Text style={styles.dropdownItemText}>kg</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.fieldContainer}>
@@ -129,6 +219,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="+000 (000) 000-0000"
+                        placeholderTextColor="#9A9A9A"
                         value={phoneNumber}
                         onChangeText={setPhoneNumber}
                     />
@@ -139,6 +230,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your email"
+                        placeholderTextColor="#9A9A9A"
                         value={email}
                         onChangeText={setEmail}
                         autoCapitalize="none"
@@ -151,6 +243,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your password"
+                        placeholderTextColor="#9A9A9A"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
@@ -162,6 +255,7 @@ export default function SignupPage() {
                     <TextInput
                         style={styles.input}
                         placeholder="Re-enter your password"
+                        placeholderTextColor="#9A9A9A"
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry
@@ -214,6 +308,49 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 3,
     },
+    inputRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    inputWithDropdown: {
+        flex: 1,
+        height: 52,
+        backgroundColor: "#F5F5F5",
+        borderTopLeftRadius: 6,
+        borderBottomLeftRadius: 6,
+        paddingHorizontal: 14,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    dropdownButton: {
+        width: 85,
+        height: 52,
+        backgroundColor: "#F5F5F5",
+        borderTopRightRadius: 6,
+        borderBottomRightRadius: 6,
+        borderLeftWidth: 1,
+        borderLeftColor: "#D9D9D9",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-evenly",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    dropdownButtonText: {
+        color: "#7A7A7A",
+        fontWeight: "600",
+        fontSize: 16,
+    },
+    dropdownArrow: {
+        color: "#7A7A7A",
+        fontSize: 16,
+    },
     createButton: {
         backgroundColor: "#1EA7FF",
         paddingVertical: 12,
@@ -238,11 +375,34 @@ const styles = StyleSheet.create({
     },
     fieldContainer: {
         marginBottom: 16,
+        position: "relative",
     },
     label: {
         fontSize: 16,
         fontWeight: "700",
         marginBottom: 6,
+        color: "#000",
+    },
+    inlineDropdownMenu: {
+        position: "absolute",
+        top: 92,
+        right: 0,
+        width: 85,
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        paddingVertical: 6,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 6,
+    },
+    dropdownItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+    },
+    dropdownItemText: {
+        fontSize: 16,
         color: "#000",
     },
 });

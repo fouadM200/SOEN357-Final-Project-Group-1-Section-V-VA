@@ -73,7 +73,10 @@ export default function CoachPage() {
                         <View style={styles.headerLeft}>
                             <Text style={styles.headerTitle}>Online Coaching</Text>
                             <View style={styles.headerButtons}>
-                                <TouchableOpacity style={styles.headerButton}>
+                                <TouchableOpacity
+                                    style={styles.headerButton}
+                                    onPress={() => router.push("/messages")}
+                                >
                                     <Ionicons name="mail-outline" size={18} color="#1DA1F2" />
                                     <Text style={styles.headerButtonText}>Messages</Text>
                                 </TouchableOpacity>
