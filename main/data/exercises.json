@@ -1,0 +1,134 @@
+[
+  {
+    "id": "barbell-bench-press",
+    "category": "Chest",
+    "name": "Barbell Bench Press",
+    "startingPosition": "Lie on a flat bench. Grip the barbell with hands slightly wider than shoulder-width. Plant your feet firmly on the ground. Your eyes should be under the bar.",
+    "execution": "Lower the bar slowly to your mid-chest. Press it back up until arms are extended, keeping a slight bend in the elbows at the top. Breathe in as you lower and out as you press.",
+    "equipment": "Barbell, Flat bench",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Barbell_bench_press"
+  },
+  {
+    "id": "incline-dumbbell-bench-press",
+    "category": "Chest",
+    "name": "Incline Dumbbell Bench Press",
+    "startingPosition": "Sit on an incline bench (30-45 degrees) with a dumbbell in each hand resting on your thighs. Kick the weights up to your shoulders as you lie back.",
+    "execution": "Press the dumbbells up above your chest. Lower them slowly to the sides of your upper chest until you feel a stretch, then press back up.",
+    "equipment": "Dumbbells, Incline bench",
+    "mainMuscles": ["Upper Chest"],
+    "secondaryMuscles": ["Front Deltoids", "Triceps"],
+    "imageName": "Incline_dumbell_bench_press"
+  },
+  {
+    "id": "pec-deck-fly",
+    "category": "Chest",
+    "name": "Pec Deck Fly",
+    "startingPosition": "Sitting on the \"Peck deck\" machine with your back pressed against the backrest, your forearms well supported against the padded parts provided for this purpose. Your upper arms should be parallel to the ground and in line with your shoulders.",
+    "execution": "Tighten your arms as much as possible following the movement of the machine. Tighten your chest at the end of the movement and then slowly return to the initial position.",
+    "equipment": "Peck Deck machine",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Front deltoids"],
+    "imageName": "Pec_dec_fly"
+  },
+  {
+    "id": "cable-crossover",
+    "category": "Chest",
+    "name": "Cable Crossover",
+    "startingPosition": "Stand in the middle of a cable machine with pulleys set at shoulder height or higher. Grasp handles and step forward with one foot for balance.",
+    "execution": "Bring your hands together in front of your chest in a wide arc, slightly bending your elbows. Squeeze your chest at the peak, then slowly return to the starting position.",
+    "equipment": "Cable machine",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Front Deltoids"],
+    "imageName": "Cable_crossover"
+  },
+  {
+    "id": "incline-barbell-bench-press",
+    "category": "Chest",
+    "name": "Incline Barbell Bench Press",
+    "startingPosition": "Lie on an incline bench. Grip the barbell slightly wider than shoulder-width with a firm grip. Ensure your feet are stable on the floor.",
+    "execution": "Lower the bar controlled to your upper chest. Press it back up until arms are extended, focusing on the contraction in your upper chest.",
+    "equipment": "Barbell, Incline bench",
+    "mainMuscles": ["Upper Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Incline_barbell_bench_press"
+  },
+  {
+    "id": "dumbbell-bench-press",
+    "category": "Chest",
+    "name": "Dumbbell Bench Press",
+    "startingPosition": "Lie on a flat bench with a dumbbell in each hand at chest level, palms facing forward. Feet should be flat on the floor.",
+    "execution": "Press the dumbbells up until arms are extended but not locked. Lower them back down to chest level in a controlled manner.",
+    "equipment": "Dumbbells, Flat bench",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Dumbbell_bench_press"
+  },
+  {
+    "id": "dumbbell-fly",
+    "category": "Chest",
+    "name": "Dumbbell Fly",
+    "startingPosition": "Lie on a flat bench with dumbbells held above your chest, palms facing each other and elbows slightly bent.",
+    "execution": "Lower the weights in a wide arc until you feel a stretch in your chest. Bring them back together using the same arc, maintaining the slight bend in your elbows.",
+    "equipment": "Dumbbells, Flat bench",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Front Deltoids"],
+    "imageName": "Dumbbell_fly"
+  },
+  {
+    "id": "incline-dumbbell-fly",
+    "category": "Chest",
+    "name": "Incline Dumbbell Fly",
+    "startingPosition": "Lie on an incline bench with dumbbells held above your upper chest, palms facing each other and elbows slightly bent.",
+    "execution": "Lower the weights in a wide arc to the sides of your chest. Bring them back together above your chest, focusing on squeezing the upper chest muscles.",
+    "equipment": "Dumbbells, Incline bench",
+    "mainMuscles": ["Upper Chest"],
+    "secondaryMuscles": ["Front Deltoids"],
+    "imageName": "Incline_dumbbell_fly"
+  },
+  {
+    "id": "chest-press-machine",
+    "category": "Chest",
+    "name": "Chest Press Machine",
+    "startingPosition": "Sit in the chest press machine and adjust the seat height so the handles are at mid-chest level. Keep your back flat against the pad.",
+    "execution": "Press the handles forward until arms are extended. Slowly return to the starting position without letting the weights touch down.",
+    "equipment": "Chest press machine",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Chest_press_machine"
+  },
+  {
+    "id": "barbell-declined-bench-press",
+    "category": "Chest",
+    "name": "Barbell Declined Bench Press",
+    "startingPosition": "Lie on a decline bench and secure your feet. Grip the barbell slightly wider than shoulder-width.",
+    "execution": "Lower the bar controlled to your lower chest. Press it back up until arms are extended, focusing on the lower chest contraction.",
+    "equipment": "Barbell, Decline bench",
+    "mainMuscles": ["Lower Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Barbell_declined_bench_press"
+  },
+  {
+    "id": "dumbbell-declined-bench-press",
+    "category": "Chest",
+    "name": "Dumbbell Declined Bench Press",
+    "startingPosition": "Lie on a decline bench with your feet secured and dumbbells at chest level, palms facing forward.",
+    "execution": "Press the dumbbells up. Lower them back down to the sides of your lower chest, maintaining control throughout the range of motion.",
+    "equipment": "Dumbbells, Decline bench",
+    "mainMuscles": ["Lower Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids"],
+    "imageName": "Dumbbell_declined_bench_press"
+  },
+  {
+    "id": "push-ups",
+    "category": "Chest",
+    "name": "Push Ups",
+    "startingPosition": "Start in a plank position with hands slightly wider than shoulder-width and feet together. Keep your body in a straight line.",
+    "execution": "Lower your body until your chest nearly touches the floor. Push yourself back up to the starting position while keeping your core tight.",
+    "equipment": "None",
+    "mainMuscles": ["Chest"],
+    "secondaryMuscles": ["Triceps", "Front Deltoids", "Core"],
+    "imageName": "Push-ups"
+  }
+]

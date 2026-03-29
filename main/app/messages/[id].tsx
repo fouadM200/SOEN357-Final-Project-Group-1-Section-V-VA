@@ -238,6 +238,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#1DA1F2",
         paddingHorizontal: 16,
         paddingVertical: 14,
+        paddingTop: 46,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
