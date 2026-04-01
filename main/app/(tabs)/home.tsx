@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ScrollView,
     StyleSheet,
@@ -8,14 +8,41 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Svg, { Circle } from "react-native-svg";
 import FitFuelLogo from "../../components/FitFuelLogo";
 
 const weekDays = [
+    { day: "Sun", date: 1, active: false },
+    { day: "Mon", date: 2, active: false },
+    { day: "Tue", date: 3, active: false },
+    { day: "Wed", date: 4, active: false },
+    { day: "Thu", date: 5, active: false },
+    { day: "Fri", date: 6, active: false },
+    { day: "Sat", date: 7, active: false },
+    { day: "Sun", date: 8, active: false },
+    { day: "Mon", date: 9, active: false },
+    { day: "Tue", date: 10, active: false },
+    { day: "Wed", date: 11, active: false },
+    { day: "Thu", date: 12, active: false },
+    { day: "Fri", date: 13, active: false },
+    { day: "Sat", date: 14, active: false },
+    { day: "Sun", date: 15, active: false },
+    { day: "Mon", date: 16, active: false },
+    { day: "Tue", date: 17, active: false },
+    { day: "Wed", date: 18, active: false },
+    { day: "Thu", date: 19, active: false },
+    { day: "Fri", date: 20, active: false },
+    { day: "Sat", date: 21, active: false },
+    { day: "Sun", date: 22, active: false },
+    { day: "Mon", date: 23, active: false },
     { day: "Tue", date: 24, active: false },
     { day: "Wed", date: 25, active: false },
     { day: "Thu", date: 26, active: true },
     { day: "Fri", date: 27, active: false },
     { day: "Sat", date: 28, active: false },
+    { day: "Sun", date: 29, active: false },
+    { day: "Mon", date: 30, active: false },
+    { day: "Tue", date: 31, active: false },
 ];
 
 const reportCards = [
@@ -24,24 +51,28 @@ const reportCards = [
         value: "20",
         label: "Minutes left",
         icon: "barbell-outline",
+        progress: 0.72,
     },
     {
         title: "Active Calories",
         value: "1105",
         label: "Calories left",
         icon: "flame-outline",
+        progress: 0.58,
     },
     {
         title: "Heart Rate",
         value: "86",
         label: "BPM",
         icon: "heart-outline",
+        progress: 0.82,
     },
     {
         title: "Steps",
         value: "2250",
         label: "Steps left",
         icon: "footsteps-outline",
+        progress: 0.35,
     },
 ];
 
@@ -51,8 +82,58 @@ const badges = [
     "Reached your daily calorie intake goal for 7 days in a row",
 ];
 
+function ReportRing({
+                        icon,
+                        progress,
+                    }: {
+    icon: keyof typeof Ionicons.glyphMap;
+    progress: number;
+}) {
+    const size = 68;
+    const strokeWidth = 6;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const clampedProgress = Math.max(0, Math.min(progress, 1));
+    const dashOffset = circumference * (1 - clampedProgress);
+
+    return (
+        <View style={styles.circleWrapper}>
+            <View style={styles.ringContainer}>
+                <Svg width={size} height={size} style={styles.ringSvg}>
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#D9D9D9"
+                        strokeWidth={strokeWidth}
+                        fill="none"
+                    />
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#1EA7FF"
+                        strokeWidth={strokeWidth}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${circumference} ${circumference}`}
+                        strokeDashoffset={dashOffset}
+                        rotation={-90}
+                        origin={`${size / 2}, ${size / 2}`}
+                    />
+                </Svg>
+
+                <View style={styles.circleInner}>
+                    <Ionicons name={icon} size={24} color="#000" />
+                </View>
+            </View>
+        </View>
+    );
+}
+
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
+    const daysScrollRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         const loadFirstName = async () => {
@@ -63,6 +144,21 @@ export default function HomePage() {
         };
 
         loadFirstName();
+
+        const activeIndex = weekDays.findIndex((item) => item.active);
+
+        if (activeIndex !== -1) {
+            const cardWidth = 72;
+            const cardGap = 10;
+            const cardFullWidth = cardWidth + cardGap;
+
+            setTimeout(() => {
+                daysScrollRef.current?.scrollTo({
+                    x: Math.max(0, activeIndex * cardFullWidth - 135),
+                    animated: false,
+                });
+            }, 100);
+        }
     }, []);
 
     return (
@@ -89,6 +185,7 @@ export default function HomePage() {
                 </TouchableOpacity>
 
                 <ScrollView
+                    ref={daysScrollRef}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.daysRow}
@@ -130,17 +227,10 @@ export default function HomePage() {
                         <View key={index} style={styles.reportCard}>
                             <Text style={styles.reportTitle}>{card.title}</Text>
 
-                            <View style={styles.circleWrapper}>
-                                <View style={styles.circleOuter}>
-                                    <View style={styles.circleInner}>
-                                        <Ionicons
-                                            name={card.icon as any}
-                                            size={24}
-                                            color="#000"
-                                        />
-                                    </View>
-                                </View>
-                            </View>
+                            <ReportRing
+                                icon={card.icon as keyof typeof Ionicons.glyphMap}
+                                progress={card.progress}
+                            />
 
                             <Text style={styles.reportValue}>{card.value}</Text>
                             <Text style={styles.reportLabel}>{card.label}</Text>
@@ -349,15 +439,17 @@ const styles = StyleSheet.create({
     circleWrapper: {
         marginBottom: 10,
     },
-    circleOuter: {
+    ringContainer: {
         width: 68,
         height: 68,
-        borderRadius: 34,
-        borderWidth: 6,
-        borderColor: "#1EA7FF",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#fff",
+        position: "relative",
+    },
+    ringSvg: {
+        position: "absolute",
+        top: 0,
+        left: 0,
     },
     circleInner: {
         width: 42,
