@@ -30,7 +30,6 @@ export default function LoginPage() {
             await AsyncStorage.setItem("firstName", result.user.firstName);
         }
 
-        Alert.alert("Success", "Logged in successfully.");
         router.push("/(tabs)/home");
     };
 
