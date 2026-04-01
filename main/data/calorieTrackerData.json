@@ -1,0 +1,88 @@
+{
+  "calorieSummary": {
+    "goal": 2500,
+    "consumed": 1395,
+    "remaining": 1105,
+    "macros": {
+      "protein": { "current": 98, "goal": 200 },
+      "fat": { "current": 38, "goal": 150 },
+      "carbs": { "current": 152, "goal": 200 }
+    },
+    "water": {
+      "current": 1.5,
+      "goal": 3
+    }
+  },
+  "mealSections": [
+    {
+      "id": "breakfast",
+      "title": "Breakfast",
+      "current": 500,
+      "goal": 500,
+      "icon": "cafe-outline",
+      "meals": [
+        {
+          "id": "oatmeal",
+          "name": "Oatmeal with isolate powder nuts and bananas",
+          "calories": 400,
+          "protein": 30,
+          "fat": 10,
+          "carbs": 38,
+          "imageKey": "oatmeal"
+        },
+        {
+          "id": "apple",
+          "name": "Green apple",
+          "calories": 95,
+          "protein": 0,
+          "fat": 0,
+          "carbs": 25,
+          "imageKey": "green_apple"
+        },
+        {
+          "id": "coffee",
+          "name": "Black coffee",
+          "calories": 5,
+          "protein": 0,
+          "fat": 0,
+          "carbs": 1,
+          "imageKey": "black_coffee"
+        }
+      ]
+    },
+    {
+      "id": "lunch",
+      "title": "Lunch",
+      "current": 895,
+      "goal": 1200,
+      "icon": "restaurant-outline",
+      "meals": [
+        {
+          "id": "chicken_rice",
+          "name": "Grilled chicken with rice and cooked vegetables",
+          "calories": 895,
+          "protein": 68,
+          "fat": 28,
+          "carbs": 88,
+          "imageKey": "chicken_rice"
+        }
+      ]
+    },
+    {
+      "id": "snack",
+      "title": "Snack",
+      "current": 0,
+      "goal": 300,
+      "icon": "nutrition-outline",
+      "meals": []
+    },
+    {
+      "id": "dinner",
+      "title": "Dinner",
+      "current": 0,
+      "goal": 500,
+      "icon": "moon-outline",
+      "meals": []
+    }
+  ]
+}
