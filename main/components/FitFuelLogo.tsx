@@ -10,7 +10,7 @@ type FitFuelLogoProps = {
 export default function FitFuelLogo({
                                         width = 180,
                                         height = 180,
-                                    }: FitFuelLogoProps) {
+                                    }: Readonly<FitFuelLogoProps>) {
     return (
         <View style={styles.container}>
             <Image
