@@ -1,13 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import Slider from "@react-native-community/slider";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Svg, { Circle } from "react-native-svg";
+import { SafeAreaView } from "react-native-safe-area-context";
 import calorieTrackerData from "../../data/calorieTrackerData.json";
 import { mealImages } from "../../data/mealImages";
-import FitFuelLogo from "../../components/FitFuelLogo";
+import PageHeaderBanner from "../../components/PageHeaderBanner";
 
 type Meal = {
     id: string;
@@ -333,193 +341,181 @@ export default function CalorieTrackerPage() {
     };
 
     return (
-        <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-        >
-            <View style={styles.header}>
-                <View style={styles.headerTitleWrap}>
-                    <Text style={styles.headerTitle}>Calorie Tracker</Text>
-                </View>
-
-                <View style={styles.logoWrapper}>
-                    <FitFuelLogo width={110} height={110} />
-                </View>
-            </View>
-
-            <View style={styles.content}>
-                <TouchableOpacity style={styles.monthPill}>
-                    <Text style={styles.monthText}>March 2026</Text>
-                    <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
-                </TouchableOpacity>
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
+            <View style={styles.container}>
+                <PageHeaderBanner
+                    title="Calorie Tracker"
+                    logo={
+                        <Image
+                            source={require("../../assets/images/fitfuel-logo.png")}
+                            style={styles.headerLogo}
+                            resizeMode="contain"
+                        />
+                    }
+                />
 
                 <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.daysRow}
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
                 >
-                    {[
-                        { day: "Tue", date: 24, active: false },
-                        { day: "Wed", date: 25, active: false },
-                        { day: "Thu", date: 26, active: true },
-                        { day: "Fri", date: 27, active: false },
-                        { day: "Sat", date: 28, active: false },
-                    ].map((item, index) => (
-                        <View
-                            key={index}
-                            style={[styles.dayCard, item.active && styles.dayCardActive]}
+                    <View style={styles.content}>
+                        <TouchableOpacity style={styles.monthPill}>
+                            <Text style={styles.monthText}>March 2026</Text>
+                            <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
+                        </TouchableOpacity>
+
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.daysRow}
                         >
-                            <Text style={[styles.dayText, item.active && styles.dayTextActive]}>
-                                {item.day}
-                            </Text>
-                            <Text style={[styles.dateText, item.active && styles.dateTextActive]}>
-                                {item.date}
-                            </Text>
-                        </View>
-                    ))}
-                </ScrollView>
+                            {[
+                                { day: "Tue", date: 24, active: false },
+                                { day: "Wed", date: 25, active: false },
+                                { day: "Thu", date: 26, active: true },
+                                { day: "Fri", date: 27, active: false },
+                                { day: "Sat", date: 28, active: false },
+                            ].map((item, index) => (
+                                <View
+                                    key={index}
+                                    style={[styles.dayCard, item.active && styles.dayCardActive]}
+                                >
+                                    <Text style={[styles.dayText, item.active && styles.dayTextActive]}>
+                                        {item.day}
+                                    </Text>
+                                    <Text style={[styles.dateText, item.active && styles.dateTextActive]}>
+                                        {item.date}
+                                    </Text>
+                                </View>
+                            ))}
+                        </ScrollView>
 
-                <View style={styles.sectionDivider} />
+                        <View style={styles.sectionDivider} />
 
-                <Text style={styles.pageSectionTitle}>Today’s calorie intake report</Text>
+                        <Text style={styles.pageSectionTitle}>Today’s calorie intake report</Text>
 
-                <View style={styles.summaryCard}>
-                    <Text style={styles.summaryTitle}>Calorie Goal</Text>
-                    <Text style={styles.summaryGoal}>{calorieSummary.goal} kcal</Text>
+                        <View style={styles.summaryCard}>
+                            <Text style={styles.summaryTitle}>Calorie Goal</Text>
+                            <Text style={styles.summaryGoal}>{calorieSummary.goal} kcal</Text>
 
-                    <View style={styles.summaryMiddleRow}>
-                        <View style={styles.sideStat}>
-                            <Text style={styles.sideStatBlue}>{totalConsumed} kcal</Text>
-                            <Text style={styles.sideStatLabel}>consumed</Text>
-                        </View>
+                            <View style={styles.summaryMiddleRow}>
+                                <View style={styles.sideStat}>
+                                    <Text style={styles.sideStatBlue}>{totalConsumed} kcal</Text>
+                                    <Text style={styles.sideStatLabel}>consumed</Text>
+                                </View>
 
-                        <ProgressRing progress={calorieProgress} />
+                                <ProgressRing progress={calorieProgress} />
 
-                        <View style={styles.sideStat}>
-                            <Text style={styles.sideStatBlue}>{totalRemaining} kcal</Text>
-                            <Text style={styles.sideStatLabel}>remaining</Text>
-                        </View>
-                    </View>
+                                <View style={styles.sideStat}>
+                                    <Text style={styles.sideStatBlue}>{totalRemaining} kcal</Text>
+                                    <Text style={styles.sideStatLabel}>remaining</Text>
+                                </View>
+                            </View>
 
-                    <View style={styles.macroRow}>
-                        <MacroBar
-                            label="Protein"
-                            current={totalProtein}
-                            goal={calorieSummary.macros.protein.goal}
-                            progress={proteinProgress}
-                        />
-                        <MacroBar
-                            label="Fat"
-                            current={totalFat}
-                            goal={calorieSummary.macros.fat.goal}
-                            progress={fatProgress}
-                        />
-                        <MacroBar
-                            label="Carbs"
-                            current={totalCarbs}
-                            goal={calorieSummary.macros.carbs.goal}
-                            progress={carbsProgress}
-                        />
-                    </View>
-                </View>
-
-                <View style={styles.waterCard}>
-                    <View style={styles.sectionHeaderRow}>
-                        <View style={styles.sectionTitleRow}>
-                            <Ionicons name="water-outline" size={24} color="#000" />
-                            <View style={styles.sectionTitleTextWrap}>
-                                <Text style={styles.sectionCardTitle}>Water Intake</Text>
-                                <Text style={styles.sectionCardSubtitle}>
-                                    {waterIntake.toFixed(1)} / {waterGoal} L
-                                </Text>
+                            <View style={styles.macroRow}>
+                                <MacroBar
+                                    label="Protein"
+                                    current={totalProtein}
+                                    goal={calorieSummary.macros.protein.goal}
+                                    progress={proteinProgress}
+                                />
+                                <MacroBar
+                                    label="Fat"
+                                    current={totalFat}
+                                    goal={calorieSummary.macros.fat.goal}
+                                    progress={fatProgress}
+                                />
+                                <MacroBar
+                                    label="Carbs"
+                                    current={totalCarbs}
+                                    goal={calorieSummary.macros.carbs.goal}
+                                    progress={carbsProgress}
+                                />
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.addButton} onPress={handleAddWater}>
-                            <Ionicons name="add" size={20} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
+                        <View style={styles.waterCard}>
+                            <View style={styles.sectionHeaderRow}>
+                                <View style={styles.sectionTitleRow}>
+                                    <Ionicons name="water-outline" size={24} color="#000" />
+                                    <View style={styles.sectionTitleTextWrap}>
+                                        <Text style={styles.sectionCardTitle}>Water Intake</Text>
+                                        <Text style={styles.sectionCardSubtitle}>
+                                            {waterIntake.toFixed(1)} / {waterGoal} L
+                                        </Text>
+                                    </View>
+                                </View>
 
-                    <View style={styles.sectionInnerDivider} />
+                                <TouchableOpacity style={styles.addButton} onPress={handleAddWater}>
+                                    <Ionicons name="add" size={20} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
 
-                    <View style={styles.waterSliderWrapper}>
-                        <View style={styles.waterTrack}>
-                            <View
-                                style={[
-                                    styles.waterFill,
-                                    { width: `${Math.min(waterProgress * 100, 100)}%` },
-                                ]}
-                            />
+                            <View style={styles.sectionInnerDivider} />
+
+                            <View style={styles.waterSliderWrapper}>
+                                <View style={styles.waterTrack}>
+                                    <View
+                                        style={[
+                                            styles.waterFill,
+                                            { width: `${Math.min(waterProgress * 100, 100)}%` },
+                                        ]}
+                                    />
+                                </View>
+
+                                <Slider
+                                    style={styles.waterSlider}
+                                    minimumValue={0}
+                                    maximumValue={waterGoal}
+                                    step={waterStep}
+                                    value={waterIntake}
+                                    onValueChange={handleWaterSliderChange}
+                                    minimumTrackTintColor="transparent"
+                                    maximumTrackTintColor="transparent"
+                                    thumbTintColor="#1EA7FF"
+                                />
+                            </View>
                         </View>
 
-                        <Slider
-                            style={styles.waterSlider}
-                            minimumValue={0}
-                            maximumValue={waterGoal}
-                            step={waterStep}
-                            value={waterIntake}
-                            onValueChange={handleWaterSliderChange}
-                            minimumTrackTintColor="transparent"
-                            maximumTrackTintColor="transparent"
-                            thumbTintColor="#1EA7FF"
-                        />
+                        {sections.map((section) => (
+                            <MealSectionCard
+                                key={section.id}
+                                section={section}
+                                onAddPress={() =>
+                                    router.push({
+                                        pathname: "/add-meal",
+                                        params: { section: section.id },
+                                    })
+                                }
+                            />
+                        ))}
                     </View>
-                </View>
-
-                {sections.map((section) => (
-                    <MealSectionCard
-                        key={section.id}
-                        section={section}
-                        onAddPress={() =>
-                            router.push({
-                                pathname: "/add-meal",
-                                params: { section: section.id },
-                            })
-                        }
-                    />
-                ))}
+                </ScrollView>
             </View>
-        </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: "#1EA7FF",
+    },
     container: {
+        flex: 1,
+        backgroundColor: "#F5F5F5",
+    },
+    scrollView: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
     scrollContent: {
         paddingBottom: 30,
     },
-    header: {
-        backgroundColor: "#1EA7FF",
-        paddingTop: 54,
-        paddingBottom: 24,
-        paddingHorizontal: 20,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        borderBottomWidth: 1,
-        borderBottomColor: "#CFCFCF",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.14,
-        shadowRadius: 3,
-        elevation: 4,
-    },
-    headerTitleWrap: {
-        flex: 1,
-        paddingRight: 10,
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 28,
-        fontWeight: "800",
-    },
-    logoWrapper: {
-        justifyContent: "center",
-        alignItems: "center",
+    headerLogo: {
+        width: 120,
+        height: 120,
     },
     content: {
         paddingHorizontal: 20,
