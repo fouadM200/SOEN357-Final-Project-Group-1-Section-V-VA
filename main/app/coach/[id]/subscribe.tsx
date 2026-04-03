@@ -6,14 +6,13 @@ import {
     TouchableOpacity,
     View,
     TextInput,
-    Modal,
     Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { useCoach, subscribeToCoach } from "../../../hooks/useCoach";
+import { useCoach, subscribeToCoach } from "@/hooks/useCoach";
 import SubscriptionSuccessModal from "@/components/modals/SubscriptionSuccessModal";
 
 export default function SubscribePage() {
@@ -249,11 +248,13 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginRight: 15,
+        paddingTop: 40
     },
     headerTitle: {
         fontSize: 18,
         color: "#ccc",
         fontWeight: "500",
+        paddingTop: 40
     },
     content: {
         paddingHorizontal: 25,
