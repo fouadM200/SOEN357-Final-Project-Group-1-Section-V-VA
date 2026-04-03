@@ -8,6 +8,15 @@ export type ConversationEntry = {
     updatedAt?: string;
 };
 
+export type ChatMessage = {
+    id: string;
+    sender: "user" | "coach";
+    text: string;
+    timestamp: string;
+};
+
+const getCoachMessagesKey = (coachId: string) => `fitfuel_messages_${coachId}`;
+
 export async function getConversations(): Promise<ConversationEntry[]> {
     try {
         const value = await AsyncStorage.getItem(CONVERSATIONS_KEY);
@@ -32,6 +41,26 @@ export async function saveConversation(coachId: string, lastMessage?: string) {
         ];
 
         await AsyncStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(updated));
+    } catch {
+        // ignore storage errors for now
+    }
+}
+
+export async function getMessages(coachId: string): Promise<ChatMessage[]> {
+    try {
+        const value = await AsyncStorage.getItem(getCoachMessagesKey(coachId));
+        return value ? JSON.parse(value) : [];
+    } catch {
+        return [];
+    }
+}
+
+export async function saveMessages(coachId: string, messages: ChatMessage[]) {
+    try {
+        await AsyncStorage.setItem(
+            getCoachMessagesKey(coachId),
+            JSON.stringify(messages)
+        );
     } catch {
         // ignore storage errors for now
     }

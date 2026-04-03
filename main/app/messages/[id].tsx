@@ -12,12 +12,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCoach } from "../../hooks/useCoach";
-import { saveConversation } from "../../utils/messageStorage";
-
-type ChatMessage = {
-    sender: "user" | "coach";
-    text: string;
-};
+import {
+    ChatMessage,
+    getMessages,
+    saveConversation,
+    saveMessages,
+} from "../../utils/messageStorage";
 
 export default function CoachChatPage() {
     const router = useRouter();
@@ -27,17 +27,26 @@ export default function CoachChatPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
     useEffect(() => {
-        if (coach) {
-            const initialMessages = getMockMessages(coach.name);
-            setMessages(initialMessages);
+        const loadStoredMessages = async () => {
+            if (!coach) return;
 
-            saveConversation(
-                coach.id,
-                initialMessages[initialMessages.length - 1]?.text || `Conversation with ${coach.name}`
-            );
-        }
+            setIsLoadingMessages(true);
+
+            const storedMessages = await getMessages(coach.id);
+            setMessages(storedMessages);
+
+            if (storedMessages.length > 0) {
+                const lastMessage = storedMessages[storedMessages.length - 1];
+                await saveConversation(coach.id, lastMessage.text);
+            }
+
+            setIsLoadingMessages(false);
+        };
+
+        loadStoredMessages();
     }, [coach]);
 
     if (!coach) {
@@ -50,62 +59,86 @@ export default function CoachChatPage() {
         );
     }
 
-    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const wait = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
 
     const handleSend = async () => {
         const trimmed = input.trim();
+
         if (!trimmed || isGenerating) return;
 
-        const updatedMessages: ChatMessage[] = [
-            ...messages,
-            { sender: "user", text: trimmed },
-        ];
+        const userMessage: ChatMessage = {
+            id: Date.now().toString(),
+            sender: "user",
+            text: trimmed,
+            timestamp: new Date().toISOString(),
+        };
+
+        const updatedMessages = [...messages, userMessage];
 
         setMessages(updatedMessages);
         setInput("");
         setIsGenerating(true);
 
+        await saveMessages(coach.id, updatedMessages);
+        await saveConversation(coach.id, userMessage.text);
+
         try {
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_BASE_URL}/mock-coach-reply`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        coachName: coach.name,
-                        coachSpecialty: coach.specialty ?? "",
-                        messages: updatedMessages.slice(-6),
-                    }),
-                }
-            );
+            const apiBaseUrl =
+                process.env.EXPO_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000";
+
+            const url = `${apiBaseUrl}/api/mock-coach-reply`;
+
+            console.log("Sending request to:", url);
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    coachName: coach.name,
+                    coachSpecialty: coach.specialty ?? "",
+                    messages: updatedMessages.slice(-8),
+                }),
+            });
+
+            console.log("Response status:", response.status);
 
             const data = await response.json();
+            console.log("Response data:", data);
 
             const randomDelay = 1200 + Math.floor(Math.random() * 1800);
             await wait(randomDelay);
 
             const coachReply: ChatMessage = {
+                id: `${Date.now()}-coach`,
                 sender: "coach",
                 text: data.reply || "Sorry, I could not reply right now.",
+                timestamp: new Date().toISOString(),
             };
 
             const finalMessages = [...updatedMessages, coachReply];
-            setMessages(finalMessages);
 
+            setMessages(finalMessages);
+            await saveMessages(coach.id, finalMessages);
             await saveConversation(coach.id, coachReply.text);
-        } catch {
+        } catch (error) {
+            console.log("Frontend fetch error:", error);
+
             await wait(1500);
 
             const fallbackReply: ChatMessage = {
+                id: `${Date.now()}-coach-fallback`,
                 sender: "coach",
                 text: "Sorry, I could not reply right now.",
+                timestamp: new Date().toISOString(),
             };
 
             const finalMessages = [...updatedMessages, fallbackReply];
-            setMessages(finalMessages);
 
+            setMessages(finalMessages);
+            await saveMessages(coach.id, finalMessages);
             await saveConversation(coach.id, fallbackReply.text);
         } finally {
             setIsGenerating(false);
@@ -142,29 +175,37 @@ export default function CoachChatPage() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.dateChip}>
-                        <Text style={styles.dateChipText}>March 29, 2026</Text>
+                        <Text style={styles.dateChipText}>Conversation</Text>
                     </View>
 
-                    {messages.map((message, index) => (
-                        <View
-                            key={index}
-                            style={[
-                                styles.messageBubble,
-                                message.sender === "coach"
-                                    ? styles.coachBubble
-                                    : styles.userBubble,
-                            ]}
-                        >
-                            <Text
+                    {isLoadingMessages ? (
+                        <Text style={styles.emptyChatText}>Loading messages...</Text>
+                    ) : messages.length === 0 ? (
+                        <Text style={styles.emptyChatText}>
+                            No messages yet. Start the conversation.
+                        </Text>
+                    ) : (
+                        messages.map((message) => (
+                            <View
+                                key={message.id}
                                 style={[
-                                    styles.messageText,
-                                    message.sender === "user" && styles.userMessageText,
+                                    styles.messageBubble,
+                                    message.sender === "coach"
+                                        ? styles.coachBubble
+                                        : styles.userBubble,
                                 ]}
                             >
-                                {message.text}
-                            </Text>
-                        </View>
-                    ))}
+                                <Text
+                                    style={[
+                                        styles.messageText,
+                                        message.sender === "user" && styles.userMessageText,
+                                    ]}
+                                >
+                                    {message.text}
+                                </Text>
+                            </View>
+                        ))
+                    )}
 
                     {isGenerating && (
                         <View style={[styles.messageBubble, styles.coachBubble]}>
@@ -186,33 +227,13 @@ export default function CoachChatPage() {
                         onChangeText={setInput}
                     />
 
-                    <TouchableOpacity
-                        style={styles.micButton}
-                        onPress={handleSend}
-                    >
+                    <TouchableOpacity style={styles.micButton} onPress={handleSend}>
                         <Ionicons name="send" size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
             </View>
         </SafeAreaView>
     );
-}
-
-function getMockMessages(coachName: string): ChatMessage[] {
-    return [
-        {
-            sender: "coach",
-            text: `Hi! I’m ${coachName}. I reviewed your profile and I can help you build a realistic fitness plan.`,
-        },
-        {
-            sender: "user",
-            text: "That sounds great. My main goal is fat loss and improving consistency.",
-        },
-        {
-            sender: "coach",
-            text: "Perfect. We can start with 3 to 4 workouts per week and a simple calorie target.",
-        },
-    ];
 }
 
 const styles = StyleSheet.create({
@@ -259,88 +280,93 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: "#EEE",
-        justifyContent: "center",
+        backgroundColor: "#DDD",
         alignItems: "center",
+        justifyContent: "center",
         marginRight: 10,
     },
     headerCoachName: {
         color: "#fff",
         fontSize: 16,
-        fontWeight: "800",
-        flexShrink: 1,
+        fontWeight: "700",
     },
     headerIcons: {
         flexDirection: "row",
-        gap: 12,
-        marginLeft: 10,
+        gap: 14,
     },
     messagesContainer: {
         padding: 16,
-        paddingBottom: 100,
+        paddingBottom: 24,
     },
     dateChip: {
         alignSelf: "center",
-        backgroundColor: "#EAEAEA",
-        borderRadius: 12,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        backgroundColor: "#E7E7E7",
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
         marginBottom: 16,
     },
     dateChipText: {
-        fontSize: 12,
         color: "#666",
+        fontSize: 12,
         fontWeight: "600",
     },
+    emptyChatText: {
+        textAlign: "center",
+        color: "#777",
+        fontSize: 14,
+        marginTop: 20,
+    },
     messageBubble: {
-        maxWidth: "80%",
-        borderRadius: 16,
+        maxWidth: "78%",
         paddingHorizontal: 14,
         paddingVertical: 10,
+        borderRadius: 16,
         marginBottom: 10,
     },
     coachBubble: {
         alignSelf: "flex-start",
         backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E5E5",
     },
     userBubble: {
         alignSelf: "flex-end",
-        backgroundColor: "#111111",
+        backgroundColor: "#1DA1F2",
     },
     messageText: {
         fontSize: 14,
-        color: "#222",
+        color: "#111",
         lineHeight: 20,
     },
     userMessageText: {
         color: "#fff",
     },
     inputBar: {
-        position: "absolute",
-        left: 12,
-        right: 12,
-        bottom: 12,
-        backgroundColor: "#fff",
-        borderRadius: 22,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
-        borderWidth: 1,
-        borderColor: "#E5E5E5",
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: "#E5E5E5",
+        backgroundColor: "#fff",
+        gap: 10,
     },
     input: {
         flex: 1,
+        backgroundColor: "#F1F1F1",
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
         fontSize: 14,
         color: "#111",
     },
     micButton: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: "#1DA1F2",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
     },
 });
