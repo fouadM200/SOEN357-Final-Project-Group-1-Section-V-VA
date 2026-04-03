@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
-import FitFuelLogo from "../../components/FitFuelLogo";
+import PageHeaderBanner from "../../components/PageHeaderBanner";
 import { useCoaches, useSubscribedCoachIds } from "../../hooks/useCoach";
 import { ConversationEntry, getConversations } from "../../utils/messageStorage";
 
@@ -43,18 +43,23 @@ export default function MessagesPage() {
         .filter(Boolean);
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <View style={styles.headerTopRow}>
-                        <TouchableOpacity onPress={() => router.back()}>
+                <PageHeaderBanner
+                    title="Messages"
+                    leftAccessory={
+                        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
                             <Ionicons name="arrow-back" size={26} color="#fff" />
                         </TouchableOpacity>
-                        <FitFuelLogo width={120} height={120} opacity={1} />
-                    </View>
-
-                    <Text style={styles.headerTitle}>Messages</Text>
-                </View>
+                    }
+                    logo={
+                        <Image
+                            source={require("../../assets/images/fitfuel-logo.png")}
+                            style={styles.headerLogo}
+                            resizeMode="contain"
+                        />
+                    }
+                />
 
                 <View style={styles.searchBar}>
                     <Ionicons name="search" size={18} color="#999" />
@@ -96,6 +101,7 @@ export default function MessagesPage() {
                                     <View style={styles.cardText}>
                                         <View style={styles.nameRow}>
                                             <Text style={styles.name}>{item.name}</Text>
+
                                             {!isSubscribed && (
                                                 <View style={styles.unsubscribedBadge}>
                                                     <Text style={styles.unsubscribedBadgeText}>
@@ -133,28 +139,15 @@ export default function MessagesPage() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#2EA7F2",
     },
     container: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
-    header: {
-        backgroundColor: "#1DA1F2",
-        paddingHorizontal: 18,
-        paddingTop: 18,
-        paddingBottom: 20,
-    },
-    headerTopRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 24,
-        fontWeight: "800",
-        marginTop: 10,
+    headerLogo: {
+        width: 120,
+        height: 120,
     },
     searchBar: {
         marginHorizontal: 16,

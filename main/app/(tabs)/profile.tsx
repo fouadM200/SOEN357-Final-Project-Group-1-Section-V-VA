@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -10,8 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import PageHeaderBanner from "@/components/PageHeaderBanner";
 import { getCurrentUser, logoutUser, User } from "@/utils/authStorage";
-import FitFuelLogo from "@/components/FitFuelLogo";
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -66,39 +67,45 @@ export default function ProfilePage() {
     if (!user) return null;
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle}>Your Profile</Text>
-                        <FitFuelLogo width={150} height={150} opacity={1} />
+                <PageHeaderBanner
+                    title="Your Profile"
+                    logo={
+                        <Image
+                            source={require("../../assets/images/fitfuel-logo.png")}
+                            style={styles.headerLogo}
+                            resizeMode="contain"
+                        />
+                    }
+                />
+
+                <View style={styles.content}>
+                    <View style={styles.profileRow}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>{getInitials()}</Text>
+                        </View>
+
+                        <Text style={styles.name}>
+                            {user.firstName} {user.lastName}
+                        </Text>
                     </View>
-                </View>
 
-                <View style={styles.profileRow}>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{getInitials()}</Text>
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoSection}>
+                        <InfoRow label="Date of Birth:" value={user.dateOfBirth} />
+                        <InfoRow label="Height:" value={user.height} />
+                        <InfoRow label="Weight:" value={user.weight} />
+                        <InfoRow label="Phone Number:" value={user.phoneNumber} />
+                        <InfoRow label="Email:" value={user.email} />
                     </View>
 
-                    <Text style={styles.name}>
-                        {user.firstName} {user.lastName}
-                    </Text>
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                        <Ionicons name="log-out-outline" size={22} color="#fff" />
+                        <Text style={styles.logoutText}>Log out</Text>
+                    </TouchableOpacity>
                 </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.infoSection}>
-                    <InfoRow label="Date of Birth:" value={user.dateOfBirth} />
-                    <InfoRow label="Height:" value={user.height} />
-                    <InfoRow label="Weight:" value={user.weight} />
-                    <InfoRow label="Phone Number:" value={user.phoneNumber} />
-                    <InfoRow label="Email:" value={user.email} />
-                </View>
-
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={22} color="#fff" />
-                    <Text style={styles.logoutText}>Log out</Text>
-                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
@@ -121,7 +128,7 @@ function InfoRow({ label, value }: InfoRowProps) {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#1EA7FF",
     },
     container: {
         flex: 1,
@@ -131,29 +138,21 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+        backgroundColor: "#F5F5F5",
     },
-    header: {
-        backgroundColor: "#1DA1F2",
-        height: 210,
+    headerLogo: {
+        width: 120,
+        height: 120,
     },
-    headerContent: {
+    content: {
         flex: 1,
-        paddingHorizontal: 24,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginTop: 25,
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 28,
-        fontWeight: "800",
+        backgroundColor: "#F5F5F5",
+        paddingTop: 28,
     },
     profileRow: {
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 20,
-        marginTop: 28,
     },
     avatar: {
         width: 72,
@@ -181,6 +180,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         marginTop: 22,
         marginBottom: 18,
+        borderRadius: 4,
     },
     infoSection: {
         paddingHorizontal: 24,

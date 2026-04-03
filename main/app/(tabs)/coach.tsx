@@ -7,15 +7,17 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    Modal,
-    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import { useCoaches, useSubscribedCoachIds, unsubscribeFromCoach } from "../../hooks/useCoach";
+import {
+    useCoaches,
+    useSubscribedCoachIds,
+    unsubscribeFromCoach,
+} from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
-import FitFuelLogo from "../../components/FitFuelLogo";
+import PageHeaderBanner from "../../components/PageHeaderBanner";
 import UnsubscribeModal from "@/components/modals/UnsubscribeModal";
 import UnsubscribeSuccessModal from "@/components/modals/UnsubscribeSuccessModal";
 
@@ -33,7 +35,7 @@ export default function CoachPage() {
     const subscribedCoachIds = useSubscribedCoachIds();
 
     const subscribedCoaches = useMemo(() => {
-        return coaches.filter(coach => subscribedCoachIds.includes(coach.id));
+        return coaches.filter((coach) => subscribedCoachIds.includes(coach.id));
     }, [coaches, subscribedCoachIds]);
 
     const filteredCoaches = useMemo(() => {
@@ -43,8 +45,7 @@ export default function CoachPage() {
                 coach.description.toLowerCase().includes(searchText.toLowerCase());
 
             const matchesRate =
-                selectedRate === "All" ||
-                coach.rating >= Number(selectedRate);
+                selectedRate === "All" || coach.rating >= Number(selectedRate);
 
             const matchesPrice =
                 selectedPrice === "All" ||
@@ -66,31 +67,32 @@ export default function CoachPage() {
     }, [coaches, searchText, selectedRate, selectedPrice, selectedLanguage]);
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                        <View style={styles.headerLeft}>
-                            <Text style={styles.headerTitle}>Online Coaching</Text>
-                            <View style={styles.headerButtons}>
-                                <TouchableOpacity
-                                    style={styles.headerButton}
-                                    onPress={() => router.push("/messages")}
-                                >
-                                    <Ionicons name="mail-outline" size={18} color="#1DA1F2" />
-                                    <Text style={styles.headerButtonText}>Messages</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.headerButton, viewMode === "Subscriptions" && styles.activeHeaderButton]}
-                                    onPress={() => setViewMode(viewMode === "Subscriptions" ? "All" : "Subscriptions")}
-                                >
-                                    <Text style={[styles.headerButtonText, viewMode === "Subscriptions" && styles.activeHeaderButtonText]}>Subscriptions</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <FitFuelLogo width={150} height={150} opacity={1} />
-                    </View>
-                </View>
+                <PageHeaderBanner
+                    title="Online Coaching"
+                    logo={
+                        <Image
+                            source={require("../../assets/images/fitfuel-logo.png")}
+                            style={styles.headerLogo}
+                            resizeMode="contain"
+                        />
+                    }
+                    buttons={[
+                        {
+                            label: "Messages",
+                            iconName: "mail-outline",
+                            onPress: () => router.push("/messages"),
+                            active: false,
+                        },
+                        {
+                            label: "Subscriptions",
+                            onPress: () =>
+                                setViewMode(viewMode === "Subscriptions" ? "All" : "Subscriptions"),
+                            active: viewMode === "Subscriptions",
+                        },
+                    ]}
+                />
 
                 {viewMode === "All" ? (
                     <>
@@ -142,34 +144,32 @@ export default function CoachPage() {
                             showsVerticalScrollIndicator={false}
                         />
                     </>
-                ) : (
-                    <>
-                        {subscribedCoaches.length > 0 ? (
-                            <FlatList
-                                data={subscribedCoaches}
-                                keyExtractor={(item) => item.id}
-                                contentContainerStyle={styles.listContent}
-                                renderItem={({ item }) => (
-                                    <SubscriptionCard
-                                        coach={item}
-                                        onUnsubscribe={() => {
-                                            setSelectedCoachToUnsubscribe(item);
-                                            setIsUnsubscribeModalVisible(true);
-                                        }}
-                                    />
-                                )}
-                                showsVerticalScrollIndicator={false}
+                ) : subscribedCoaches.length > 0 ? (
+                    <FlatList
+                        data={subscribedCoaches}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.listContent}
+                        renderItem={({ item }) => (
+                            <SubscriptionCard
+                                coach={item}
+                                onUnsubscribe={() => {
+                                    setSelectedCoachToUnsubscribe(item);
+                                    setIsUnsubscribeModalVisible(true);
+                                }}
                             />
-                        ) : (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>Not subscribed to online coaching yet.</Text>
-                            </View>
                         )}
-                    </>
+                        showsVerticalScrollIndicator={false}
+                    />
+                ) : (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>
+                            Not subscribed to online coaching yet.
+                        </Text>
+                    </View>
                 )}
             </View>
 
-            {selectedCoachToUnsubscribe && (
+            {selectedCoachToUnsubscribe ? (
                 <UnsubscribeModal
                     visible={isUnsubscribeModalVisible}
                     coach={selectedCoachToUnsubscribe}
@@ -184,7 +184,7 @@ export default function CoachPage() {
                         setIsSuccessModalVisible(true);
                     }}
                 />
-            )}
+            ) : null}
 
             <UnsubscribeSuccessModal
                 visible={isSuccessModalVisible}
@@ -262,7 +262,13 @@ function CoachCard({ coach }: { coach: Coach }) {
     );
 }
 
-function SubscriptionCard({ coach, onUnsubscribe }: { coach: Coach, onUnsubscribe: () => void }) {
+function SubscriptionCard({
+                              coach,
+                              onUnsubscribe,
+                          }: {
+    coach: Coach;
+    onUnsubscribe: () => void;
+}) {
     return (
         <View style={styles.card}>
             <View style={styles.cardTopRow}>
@@ -291,57 +297,15 @@ function SubscriptionCard({ coach, onUnsubscribe }: { coach: Coach, onUnsubscrib
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#2EA7F2",
     },
     container: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
-    header: {
-        backgroundColor: "#1DA1F2",
-        paddingBottom: 20,
-    },
-    headerContent: {
-        paddingHorizontal: 24,
-        paddingTop: 24,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginTop: 25,
-    },
-    headerLeft: {
-        flex: 1,
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 28,
-        fontWeight: "800",
-        marginBottom: 15,
-    },
-    headerButtons: {
-        flexDirection: "column",
-        gap: 10,
-    },
-    headerButton: {
-        backgroundColor: "#fff",
-        borderRadius: 20,
-        paddingVertical: 6,
-        paddingHorizontal: 15,
-        flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start",
-        gap: 5,
-    },
-    activeHeaderButton: {
-        backgroundColor: "#fff", // Active state also white but could be different
-    },
-    headerButtonText: {
-        color: "#1DA1F2",
-        fontSize: 14,
-        fontWeight: "700",
-    },
-    activeHeaderButtonText: {
-        color: "#1DA1F2",
+    headerLogo: {
+        width: 120,
+        height: 120,
     },
     searchContainer: {
         marginTop: 14,

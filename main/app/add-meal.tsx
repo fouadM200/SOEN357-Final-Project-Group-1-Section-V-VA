@@ -1,16 +1,17 @@
 import { useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Image,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
-    Alert,
 } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import FitFuelLogo from "../components/FitFuelLogo";
+import { SafeAreaView } from "react-native-safe-area-context";
+import PageHeaderBanner from "../components/PageHeaderBanner";
 import { mealImages } from "../data/mealImages";
 
 type EstimatedMeal = {
@@ -60,8 +61,6 @@ export default function AddMealPage() {
 
             const data = await response.json();
 
-            console.log("estimate-meal response:", data);
-
             if (!response.ok) {
                 throw new Error(data?.error || "Failed to estimate meal.");
             }
@@ -104,138 +103,110 @@ export default function AddMealPage() {
 
     return (
         <>
-            <Stack.Screen
-                options={{
-                    headerShown: false,
-                }}
-            />
+            <Stack.Screen options={{ headerShown: false }} />
 
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <View style={styles.headerTitleWrap}>
-                        <Text style={styles.headerTitle}>Calorie Tracker</Text>
-                    </View>
-
-                    <View style={styles.logoWrapper}>
-                        <FitFuelLogo width={110} height={110} />
-                    </View>
-                </View>
-
-                <View style={styles.content}>
-                    <Text style={styles.title}>Add a {section} meal:</Text>
-
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter meal's name"
-                        placeholderTextColor="#9A9A9A"
-                        value={mealName}
-                        onChangeText={setMealName}
+            <SafeAreaView style={styles.safeArea} edges={["top"]}>
+                <View style={styles.container}>
+                    <PageHeaderBanner
+                        title="Calorie Tracker"
+                        logo={
+                            <Image
+                                source={require("../assets/images/fitfuel-logo.png")}
+                                style={styles.headerLogo}
+                                resizeMode="contain"
+                            />
+                        }
                     />
 
-                    {!estimatedMeal ? (
-                        <>
-                            <TouchableOpacity
-                                style={styles.searchButton}
-                                onPress={handleSearch}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.searchButtonText}>Search</Text>
-                                )}
-                            </TouchableOpacity>
+                    <View style={styles.content}>
+                        <Text style={styles.title}>Add a {section} meal:</Text>
 
-                            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <>
-                            <View style={styles.blueDivider} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter meal's name"
+                            placeholderTextColor="#9A9A9A"
+                            value={mealName}
+                            onChangeText={setMealName}
+                        />
 
-                            <View style={styles.mealCard}>
-                                {estimatedMeal.imageKey && mealImages[estimatedMeal.imageKey] ? (
-                                    <Image
-                                        source={mealImages[estimatedMeal.imageKey]}
-                                        style={styles.mealImage}
-                                    />
-                                ) : (
-                                    <View style={styles.noImagePlaceholder}>
-                                        <Text style={styles.noImageText}>No image</Text>
-                                    </View>
-                                )}
+                        <TouchableOpacity
+                            style={styles.searchButton}
+                            onPress={handleSearch}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.searchButtonText}>Search</Text>
+                            )}
+                        </TouchableOpacity>
 
-                                <View style={styles.mealContent}>
-                                    <Text style={styles.mealName}>{estimatedMeal.name}</Text>
-                                    <Text style={styles.mealCalories}>
-                                        {estimatedMeal.calories} kcal
-                                    </Text>
+                        {estimatedMeal ? (
+                            <>
+                                <View style={styles.blueDivider} />
 
-                                    <View style={styles.mealDivider} />
+                                <View style={styles.mealCard}>
+                                    {estimatedMeal.imageKey && mealImages[estimatedMeal.imageKey] ? (
+                                        <Image
+                                            source={mealImages[estimatedMeal.imageKey]}
+                                            style={styles.mealImage}
+                                        />
+                                    ) : (
+                                        <View style={styles.noImagePlaceholder}>
+                                            <Text style={styles.noImageText}>No image</Text>
+                                        </View>
+                                    )}
 
-                                    <View style={styles.mealMacrosRow}>
-                                        <Text style={styles.mealMacroText}>
-                                            Protein: {estimatedMeal.protein}g
+                                    <View style={styles.mealContent}>
+                                        <Text style={styles.mealName}>{estimatedMeal.name}</Text>
+                                        <Text style={styles.mealCalories}>
+                                            {estimatedMeal.calories} kcal
                                         </Text>
-                                        <Text style={styles.mealMacroText}>
-                                            Fat: {estimatedMeal.fat}g
-                                        </Text>
-                                        <Text style={styles.mealMacroText}>
-                                            Carbs: {estimatedMeal.carbs}g
-                                        </Text>
+
+                                        <View style={styles.mealDivider} />
+
+                                        <View style={styles.mealMacrosRow}>
+                                            <Text style={styles.mealMacroText}>
+                                                Protein: {estimatedMeal.protein}g
+                                            </Text>
+                                            <Text style={styles.mealMacroText}>
+                                                Fat: {estimatedMeal.fat}g
+                                            </Text>
+                                            <Text style={styles.mealMacroText}>
+                                                Carbs: {estimatedMeal.carbs}g
+                                            </Text>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
 
-                            <TouchableOpacity style={styles.searchButton} onPress={handleAdd}>
-                                <Text style={styles.searchButtonText}>Add</Text>
-                            </TouchableOpacity>
+                                <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
+                                    <Text style={styles.addButtonText}>Add</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : null}
 
-                            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
+                        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            </SafeAreaView>
         </>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: "#2EA7F2",
+    },
     container: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
-    header: {
-        backgroundColor: "#1EA7FF",
-        paddingTop: 54,
-        paddingBottom: 24,
-        paddingHorizontal: 20,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        borderBottomWidth: 1,
-        borderBottomColor: "#CFCFCF",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.14,
-        shadowRadius: 3,
-        elevation: 4,
-    },
-    headerTitleWrap: {
-        flex: 1,
-        paddingRight: 10,
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 28,
-        fontWeight: "800",
-    },
-    logoWrapper: {
-        justifyContent: "center",
-        alignItems: "center",
+    headerLogo: {
+        width: 120,
+        height: 120,
     },
     content: {
         paddingHorizontal: 28,
@@ -246,7 +217,6 @@ const styles = StyleSheet.create({
         fontWeight: "800",
         color: "#111",
         marginBottom: 24,
-        textTransform: "capitalize",
     },
     input: {
         height: 46,
@@ -257,7 +227,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         fontSize: 14,
         color: "#111",
-        marginBottom: 28,
+        marginBottom: 20,
     },
     searchButton: {
         height: 44,
@@ -273,6 +243,24 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     searchButtonText: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: "800",
+    },
+    addButton: {
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "#1EA7FF",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    addButtonText: {
         color: "#fff",
         fontSize: 15,
         fontWeight: "800",
@@ -360,4 +348,4 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#333",
     },
-});        // npx tsx server.ts
+});

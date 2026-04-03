@@ -51,7 +51,7 @@ export default function CoachChatPage() {
 
     if (!coach) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <SafeAreaView style={styles.safeArea} edges={["top"]}>
                 <View style={styles.notFoundContainer}>
                     <Text style={styles.notFoundText}>Conversation not found.</Text>
                 </View>
@@ -89,8 +89,6 @@ export default function CoachChatPage() {
 
             const url = `${apiBaseUrl}/api/mock-coach-reply`;
 
-            console.log("Sending request to:", url);
-
             const response = await fetch(url, {
                 method: "POST",
                 headers: {
@@ -103,10 +101,7 @@ export default function CoachChatPage() {
                 }),
             });
 
-            console.log("Response status:", response.status);
-
             const data = await response.json();
-            console.log("Response data:", data);
 
             const randomDelay = 1200 + Math.floor(Math.random() * 1800);
             await wait(randomDelay);
@@ -146,10 +141,10 @@ export default function CoachChatPage() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()}>
+                    <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
 
@@ -227,7 +222,7 @@ export default function CoachChatPage() {
                         onChangeText={setInput}
                     />
 
-                    <TouchableOpacity style={styles.micButton} onPress={handleSend}>
+                    <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
                         <Ionicons name="send" size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
@@ -239,7 +234,7 @@ export default function CoachChatPage() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#1DA1F2",
     },
     container: {
         flex: 1,
@@ -249,6 +244,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+        backgroundColor: "#F5F5F5",
     },
     notFoundText: {
         fontSize: 18,
@@ -258,8 +254,8 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: "#1DA1F2",
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        paddingTop: 46,
+        paddingTop: 14,
+        paddingBottom: 14,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
@@ -361,7 +357,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#111",
     },
-    micButton: {
+    sendButton: {
         width: 36,
         height: 36,
         borderRadius: 18,
