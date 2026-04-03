@@ -1,7 +1,5 @@
-import { useMemo } from "react";
 import {
     Image,
-    ImageSourcePropType,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,7 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useCoach } from "../../../hooks/useCoach";
+import { useCoach } from "@/hooks/useCoach";
 
 export default function CoachProfile() {
     const router = useRouter();
@@ -127,6 +125,7 @@ const styles = StyleSheet.create({
         top: 18,
         left: 18,
         zIndex: 2,
+        paddingTop: 40
     },
     heroImage: {
         width: "100%",
