@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Image,
     ScrollView,
@@ -12,40 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Svg, { Circle } from "react-native-svg";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
-
-const weekDays = [
-    { day: "Sun", date: 1, active: false },
-    { day: "Mon", date: 2, active: false },
-    { day: "Tue", date: 3, active: false },
-    { day: "Wed", date: 4, active: false },
-    { day: "Thu", date: 5, active: false },
-    { day: "Fri", date: 6, active: false },
-    { day: "Sat", date: 7, active: false },
-    { day: "Sun", date: 8, active: false },
-    { day: "Mon", date: 9, active: false },
-    { day: "Tue", date: 10, active: false },
-    { day: "Wed", date: 11, active: false },
-    { day: "Thu", date: 12, active: false },
-    { day: "Fri", date: 13, active: false },
-    { day: "Sat", date: 14, active: false },
-    { day: "Sun", date: 15, active: false },
-    { day: "Mon", date: 16, active: false },
-    { day: "Tue", date: 17, active: false },
-    { day: "Wed", date: 18, active: false },
-    { day: "Thu", date: 19, active: false },
-    { day: "Fri", date: 20, active: false },
-    { day: "Sat", date: 21, active: false },
-    { day: "Sun", date: 22, active: false },
-    { day: "Mon", date: 23, active: false },
-    { day: "Tue", date: 24, active: false },
-    { day: "Wed", date: 25, active: false },
-    { day: "Thu", date: 26, active: true },
-    { day: "Fri", date: 27, active: false },
-    { day: "Sat", date: 28, active: false },
-    { day: "Sun", date: 29, active: false },
-    { day: "Mon", date: 30, active: false },
-    { day: "Tue", date: 31, active: false },
-];
+import Calendar from "../../components/Calendar";
 
 const reportCards = [
     {
@@ -135,7 +102,6 @@ function ReportRing({
 
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
-    const daysScrollRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         const loadFirstName = async () => {
@@ -146,21 +112,6 @@ export default function HomePage() {
         };
 
         loadFirstName();
-
-        const activeIndex = weekDays.findIndex((item) => item.active);
-
-        if (activeIndex !== -1) {
-            const cardWidth = 72;
-            const cardGap = 10;
-            const cardFullWidth = cardWidth + cardGap;
-
-            setTimeout(() => {
-                daysScrollRef.current?.scrollTo({
-                    x: Math.max(0, activeIndex * cardFullWidth - 135),
-                    animated: false,
-                });
-            }, 100);
-        }
     }, []);
 
     return (
@@ -184,44 +135,7 @@ export default function HomePage() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.content}>
-                        <TouchableOpacity style={styles.monthPill}>
-                            <Text style={styles.monthText}>March 2026</Text>
-                            <Ionicons name="chevron-down" size={16} color="#8D8D8D" />
-                        </TouchableOpacity>
-
-                        <ScrollView
-                            ref={daysScrollRef}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.daysRow}
-                        >
-                            {weekDays.map((item, index) => (
-                                <View
-                                    key={index}
-                                    style={[
-                                        styles.dayCard,
-                                        item.active && styles.dayCardActive,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.dayText,
-                                            item.active && styles.dayTextActive,
-                                        ]}
-                                    >
-                                        {item.day}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.dateText,
-                                            item.active && styles.dateTextActive,
-                                        ]}
-                                    >
-                                        {item.date}
-                                    </Text>
-                                </View>
-                            ))}
-                        </ScrollView>
+                        <Calendar />
 
                         <View style={styles.sectionDivider} />
 
@@ -337,55 +251,6 @@ const styles = StyleSheet.create({
     content: {
         paddingHorizontal: 16,
         paddingTop: 14,
-    },
-    monthPill: {
-        alignSelf: "flex-start",
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#E7E7E7",
-        borderRadius: 18,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        marginBottom: 14,
-        gap: 6,
-    },
-    monthText: {
-        color: "#8D8D8D",
-        fontSize: 14,
-        fontWeight: "600",
-    },
-    daysRow: {
-        paddingBottom: 8,
-        gap: 10,
-    },
-    dayCard: {
-        width: 72,
-        height: 92,
-        backgroundColor: "#D9D9D9",
-        borderRadius: 18,
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 10,
-    },
-    dayCardActive: {
-        backgroundColor: "#1EA7FF",
-    },
-    dayText: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: "#111",
-        marginBottom: 4,
-    },
-    dayTextActive: {
-        color: "#fff",
-    },
-    dateText: {
-        fontSize: 24,
-        fontWeight: "800",
-        color: "#111",
-    },
-    dateTextActive: {
-        color: "#fff",
     },
     sectionDivider: {
         height: 3,

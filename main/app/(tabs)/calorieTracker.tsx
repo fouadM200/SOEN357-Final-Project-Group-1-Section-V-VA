@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import calorieTrackerData from "../../data/calorieTrackerData.json";
 import { mealImages } from "../../data/mealImages";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import Calendar from "../../components/Calendar";
 
 type Meal = {
     id: string;
@@ -360,36 +361,7 @@ export default function CalorieTrackerPage() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.content}>
-                        <TouchableOpacity style={styles.monthPill}>
-                            <Text style={styles.monthText}>March 2026</Text>
-                            <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
-                        </TouchableOpacity>
-
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.daysRow}
-                        >
-                            {[
-                                { day: "Tue", date: 24, active: false },
-                                { day: "Wed", date: 25, active: false },
-                                { day: "Thu", date: 26, active: true },
-                                { day: "Fri", date: 27, active: false },
-                                { day: "Sat", date: 28, active: false },
-                            ].map((item, index) => (
-                                <View
-                                    key={index}
-                                    style={[styles.dayCard, item.active && styles.dayCardActive]}
-                                >
-                                    <Text style={[styles.dayText, item.active && styles.dayTextActive]}>
-                                        {item.day}
-                                    </Text>
-                                    <Text style={[styles.dateText, item.active && styles.dateTextActive]}>
-                                        {item.date}
-                                    </Text>
-                                </View>
-                            ))}
-                        </ScrollView>
+                        <Calendar />
 
                         <View style={styles.sectionDivider} />
 
@@ -520,60 +492,6 @@ const styles = StyleSheet.create({
     content: {
         paddingHorizontal: 20,
         paddingTop: 18,
-    },
-    monthPill: {
-        alignSelf: "flex-start",
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#E7E7E7",
-        borderRadius: 18,
-        paddingHorizontal: 18,
-        paddingVertical: 9,
-        marginBottom: 16,
-        gap: 8,
-    },
-    monthText: {
-        color: "#A0A0A0",
-        fontSize: 15,
-        fontWeight: "700",
-    },
-    daysRow: {
-        gap: 12,
-        paddingBottom: 10,
-    },
-    dayCard: {
-        width: 82,
-        height: 112,
-        backgroundColor: "#D9D9D9",
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.13,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    dayCardActive: {
-        backgroundColor: "#1EA7FF",
-    },
-    dayText: {
-        fontSize: 17,
-        fontWeight: "800",
-        color: "#111",
-        marginBottom: 6,
-    },
-    dayTextActive: {
-        color: "#fff",
-    },
-    dateText: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: "#000",
-    },
-    dateTextActive: {
-        color: "#fff",
     },
     sectionDivider: {
         height: 4,
@@ -767,6 +685,21 @@ const styles = StyleSheet.create({
         height: 52,
         borderRadius: 26,
         marginRight: 12,
+    },
+    noImagePlaceholder: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        marginRight: 12,
+        backgroundColor: "#E0E0E0",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    noImageText: {
+        fontSize: 10,
+        fontWeight: "700",
+        color: "#777",
+        textAlign: "center",
     },
     mealContent: {
         flex: 1,
