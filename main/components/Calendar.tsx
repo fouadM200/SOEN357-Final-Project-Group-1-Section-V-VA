@@ -137,6 +137,10 @@ export default function Calendar({ onDateChange }: CalendarProps) {
         }, 50);
     };
 
+    const goToToday = () => {
+        setSelectedDate(new Date());
+    };
+
     const applyPicker = () => {
         const maxDay = getDaysInMonth(tempYear, tempMonth);
         const safeDay = Math.min(selectedDay, maxDay);
@@ -195,16 +199,26 @@ export default function Calendar({ onDateChange }: CalendarProps) {
 
     return (
         <View>
-            <TouchableOpacity
-                style={styles.monthPill}
-                onPress={openPicker}
-                activeOpacity={0.85}
-            >
-                <Text style={styles.monthText}>
-                    {MONTHS[selectedMonth]} {selectedYear}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#8D8D8D" />
-            </TouchableOpacity>
+            <View style={styles.topRow}>
+                <TouchableOpacity
+                    style={styles.monthPill}
+                    onPress={openPicker}
+                    activeOpacity={0.85}
+                >
+                    <Text style={styles.monthText}>
+                        {MONTHS[selectedMonth]} {selectedYear}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color="#8D8D8D" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.todayButton}
+                    onPress={goToToday}
+                    activeOpacity={0.85}
+                >
+                    <Text style={styles.todayButtonText}>Today</Text>
+                </TouchableOpacity>
+            </View>
 
             <ScrollView
                 ref={daysScrollRef}
@@ -315,6 +329,13 @@ export default function Calendar({ onDateChange }: CalendarProps) {
 }
 
 const styles = StyleSheet.create({
+    topRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 14,
+        gap: 10,
+    },
     monthPill: {
         alignSelf: "flex-start",
         flexDirection: "row",
@@ -324,12 +345,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 999,
-        marginBottom: 14,
     },
     monthText: {
         fontSize: 14,
         fontWeight: "600",
         color: "#8D8D8D",
+    },
+    todayButton: {
+        backgroundColor: "#1EA7FF",
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    todayButtonText: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#FFF",
     },
     daysRow: {
         paddingRight: 8,
