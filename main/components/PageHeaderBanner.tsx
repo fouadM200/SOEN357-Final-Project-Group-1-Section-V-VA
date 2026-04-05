@@ -87,7 +87,7 @@ export default function PageHeaderBanner({
 const styles = StyleSheet.create({
     container: {
         backgroundColor: "#2EA7F2",
-        height: 156,
+        height: 130,
         paddingHorizontal: 18,
         justifyContent: "center",
     },
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     },
     title: {
         color: "#FFFFFF",
-        fontSize: 30,
+        fontSize: 26,
         fontWeight: "800",
         marginBottom: 4,
     },

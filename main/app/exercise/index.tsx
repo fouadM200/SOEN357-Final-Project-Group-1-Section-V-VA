@@ -14,6 +14,7 @@ import { useExercisesByCategory } from "../../hooks/useExercise";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import CustomBottomNavigation from "../../components/CustomBottomNavigation";
 
 type TabType = "Muscles" | "Exercise Type";
 
@@ -183,6 +184,7 @@ export default function ExerciseCategoryScreen() {
                     </View>
                 </View>
             </SafeAreaView>
+            <CustomBottomNavigation />
         </>
     );
 }

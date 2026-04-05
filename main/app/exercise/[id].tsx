@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useExercise } from '../../hooks/useExercise';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import CustomBottomNavigation from '../../components/CustomBottomNavigation';
 
 export default function ExerciseDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +26,7 @@ export default function ExerciseDetailScreen() {
                         <Text style={styles.sectionText}>We couldn't find the exercise you're looking for (ID: {id}).</Text>
                     </View>
                 </SafeAreaView>
+                <CustomBottomNavigation />
             </>
         );
     }
@@ -83,6 +85,7 @@ export default function ExerciseDetailScreen() {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        <CustomBottomNavigation />
         </>
     );
 }

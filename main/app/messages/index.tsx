@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import CustomBottomNavigation from "../../components/CustomBottomNavigation";
 import { useCoaches, useSubscribedCoachIds } from "../../hooks/useCoach";
 import { ConversationEntry, getConversations } from "../../utils/messageStorage";
 
@@ -43,6 +44,7 @@ export default function MessagesPage() {
         .filter(Boolean);
 
     return (
+        <>
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
             <View style={styles.container}>
                 <PageHeaderBanner
@@ -133,6 +135,8 @@ export default function MessagesPage() {
                 )}
             </View>
         </SafeAreaView>
+        <CustomBottomNavigation />
+        </>
     );
 }
 
