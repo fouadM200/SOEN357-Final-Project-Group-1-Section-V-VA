@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -13,6 +13,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeaderBanner from "../components/PageHeaderBanner";
 import { mealImages } from "../data/mealImages";
+import CustomBottomNavigation from "@/components/CustomBottomNavigation";
 
 type EstimatedMeal = {
     name: string;
@@ -190,6 +191,7 @@ export default function AddMealPage() {
                         </TouchableOpacity>
                     </View>
                 </View>
+                <CustomBottomNavigation />
             </SafeAreaView>
         </>
     );

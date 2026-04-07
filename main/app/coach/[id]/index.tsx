@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useCoach } from "@/hooks/useCoach";
+import CustomBottomNavigation from "@/components/CustomBottomNavigation";
 
 export default function CoachProfile() {
     const router = useRouter();
@@ -18,15 +19,19 @@ export default function CoachProfile() {
 
     if (!coach) {
         return (
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.notFoundContainer}>
-                    <Text style={styles.notFoundText}>Coach not found.</Text>
-                </View>
-            </SafeAreaView>
+            <>
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={styles.notFoundContainer}>
+                        <Text style={styles.notFoundText}>Coach not found.</Text>
+                    </View>
+                </SafeAreaView>
+                <CustomBottomNavigation />
+            </>
         );
     }
 
     return (
+        <>
         <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.heroSection}>
@@ -97,6 +102,8 @@ export default function CoachProfile() {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        <CustomBottomNavigation />
+        </>
     );
 }
 

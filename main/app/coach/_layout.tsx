@@ -4,6 +4,7 @@ export default function CoachLayout() {
   return (
     <Stack>
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="subscriptions" options={{ headerShown: false }} />
     </Stack>
   );
 }
