@@ -34,6 +34,9 @@ export default function CustomBottomNavigation() {
     if (itemName === 'coach' && (pathname.includes('/coach/') || pathname.includes('/messages'))) {
       return true;
     }
+    if (itemName === 'calorieTracker' && pathname.includes('/add-meal')) {
+      return true;
+    }
     return false;
   };
 
