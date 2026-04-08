@@ -44,7 +44,7 @@ export default function TabLayout() {
                 options={{
                     title: "Calorie Tracker",
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="food-apple-outline" color={color} size={size} />
+                        <MaterialCommunityIcons name="food-apple" color={color} size={size} />
                     ),
                 }}
             />
