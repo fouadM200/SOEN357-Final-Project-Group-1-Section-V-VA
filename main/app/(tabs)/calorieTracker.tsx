@@ -7,10 +7,10 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import Slider from "@react-native-community/slider";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Slider from "@react-native-community/slider";
 import Svg, { Circle } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import calorieTrackerData from "../../data/calorieTrackerData.json";
@@ -28,7 +28,14 @@ import type {
 } from "@/types/calorieTracker";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSections";
-const STORAGE_WATER_KEY = "calorieTrackerWaterIntake";
+const STORAGE_WATER_KEY = "calorieTrackerWaterIntakeByDate";
+
+function formatDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
 
 function ProgressRing({
                           progress,
@@ -42,7 +49,7 @@ function ProgressRing({
 
     return (
         <View style={styles.ringWrapper}>
-            <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+            <Svg width={size} height={size} style={{ position: "absolute" }}>
                 <Circle
                     stroke="#D9D9D9"
                     fill="none"
@@ -61,8 +68,14 @@ function ProgressRing({
                     strokeLinecap="round"
                     strokeDasharray={`${circumference} ${circumference}`}
                     strokeDashoffset={strokeDashoffset}
+                    rotation={-90}
+                    origin={`${size / 2}, ${size / 2}`}
                 />
             </Svg>
+
+            <View style={styles.ringIconWrapper}>
+                <Ionicons name="flame-outline" size={34} color="#111" />
+            </View>
         </View>
     );
 }
@@ -159,8 +172,16 @@ export default function CalorieTrackerPage() {
 
     const waterGoal = calorieSummary.water.goal;
     const waterStep = 0.5;
+    const waterStepLabels = Array.from(
+        { length: Math.floor(waterGoal / waterStep) + 1 },
+        (_, index) => (index * waterStep).toFixed(1).replace(/\.0$/, "")
+    );
 
-    const [waterIntake, setWaterIntake] = useState(calorieSummary.water.current);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate]);
+
+    const [waterIntake, setWaterIntake] = useState(0);
+    const [waterByDate, setWaterByDate] = useState<Record<string, number>>({});
     const [sections, setSections] = useState<MealSection[]>(mealSections as MealSection[]);
     const [isStorageLoaded, setIsStorageLoaded] = useState(false);
     const lastProcessedRefresh = useRef<string | null>(null);
@@ -179,8 +200,17 @@ export default function CalorieTrackerPage() {
                 }
 
                 if (savedWater) {
-                    const parsedWater = JSON.parse(savedWater) as number;
-                    setWaterIntake(parsedWater);
+                    const parsedWater = JSON.parse(savedWater) as Record<string, number> | number;
+
+                    if (typeof parsedWater === "number") {
+                        const todayKey = formatDateKey(new Date());
+                        const migratedWaterMap = { [todayKey]: parsedWater };
+                        setWaterByDate(migratedWaterMap);
+                    } else {
+                        setWaterByDate(parsedWater);
+                    }
+                } else {
+                    setWaterByDate({});
                 }
             } catch (error) {
                 console.error("Failed to load calorie tracker data:", error);
@@ -213,16 +243,24 @@ export default function CalorieTrackerPage() {
             return;
         }
 
-        const saveWater = async () => {
+        const saveWaterByDate = async () => {
             try {
-                await AsyncStorage.setItem(STORAGE_WATER_KEY, JSON.stringify(waterIntake));
+                await AsyncStorage.setItem(STORAGE_WATER_KEY, JSON.stringify(waterByDate));
             } catch (error) {
                 console.error("Failed to save water intake:", error);
             }
         };
 
-        saveWater();
-    }, [waterIntake, isStorageLoaded]);
+        saveWaterByDate();
+    }, [waterByDate, isStorageLoaded]);
+
+    useEffect(() => {
+        if (!isStorageLoaded) {
+            return;
+        }
+
+        setWaterIntake(waterByDate[selectedDateKey] ?? 0);
+    }, [selectedDateKey, waterByDate, isStorageLoaded]);
 
     useEffect(() => {
         if (!isStorageLoaded) {
@@ -294,16 +332,24 @@ export default function CalorieTrackerPage() {
     const proteinProgress = totalProtein / calorieSummary.macros.protein.goal;
     const fatProgress = totalFat / calorieSummary.macros.fat.goal;
     const carbsProgress = totalCarbs / calorieSummary.macros.carbs.goal;
-    const waterProgress = waterIntake / waterGoal;
+
+    const updateWaterForSelectedDate = (nextValue: number) => {
+        setWaterIntake(nextValue);
+        setWaterByDate((prev) => ({
+            ...prev,
+            [selectedDateKey]: nextValue,
+        }));
+    };
 
     const handleAddWater = () => {
-        setWaterIntake((prev) => Math.min(prev + waterStep, waterGoal));
+        const nextValue = Math.min(waterIntake + waterStep, waterGoal);
+        updateWaterForSelectedDate(nextValue);
     };
 
     const handleWaterSliderChange = (value: number) => {
         const snappedValue = Math.round(value / waterStep) * waterStep;
         const clampedValue = Math.max(0, Math.min(snappedValue, waterGoal));
-        setWaterIntake(clampedValue);
+        updateWaterForSelectedDate(clampedValue);
     };
 
     return (
@@ -326,7 +372,7 @@ export default function CalorieTrackerPage() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.content}>
-                        <Calendar />
+                        <Calendar onDateChange={setSelectedDate} />
 
                         <View style={styles.sectionDivider} />
 
@@ -399,24 +445,16 @@ export default function CalorieTrackerPage() {
                                 value={waterIntake}
                                 onValueChange={handleWaterSliderChange}
                                 minimumTrackTintColor="#1EA7FF"
-                                maximumTrackTintColor="#D9D9D9"
+                                maximumTrackTintColor="#BFBFBF"
                                 thumbTintColor="#1EA7FF"
                             />
 
                             <View style={styles.waterScaleRow}>
-                                <Text style={styles.waterScaleText}>0 L</Text>
-                                <Text style={styles.waterScaleText}>{waterGoal} L</Text>
-                            </View>
-
-                            <View style={styles.waterProgressRow}>
-                                <View style={styles.waterTrack}>
-                                    <View
-                                        style={[
-                                            styles.waterFill,
-                                            { width: `${Math.max(0, Math.min(waterProgress, 1)) * 100}%` },
-                                        ]}
-                                    />
-                                </View>
+                                {waterStepLabels.map((label) => (
+                                    <Text key={label} style={styles.waterScaleText}>
+                                        {label}
+                                    </Text>
+                                ))}
                             </View>
                         </View>
 
@@ -521,6 +559,13 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     ringWrapper: {
+        width: 92,
+        height: 92,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    ringIconWrapper: {
+        position: "absolute",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -609,31 +654,21 @@ const styles = StyleSheet.create({
     slider: {
         width: "100%",
         height: 40,
+        marginBottom: 2,
     },
     waterScaleRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 2,
-        marginBottom: 10,
+        alignItems: "center",
+        marginBottom: 4,
+        paddingHorizontal: 2,
     },
     waterScaleText: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: "700",
         color: "#333",
-    },
-    waterProgressRow: {
-        marginTop: 4,
-    },
-    waterTrack: {
-        height: 10,
-        borderRadius: 999,
-        backgroundColor: "#BFBFBF",
-        overflow: "hidden",
-    },
-    waterFill: {
-        height: "100%",
-        borderRadius: 999,
-        backgroundColor: "#1EA7FF",
+        textAlign: "center",
+        minWidth: 18,
     },
     mealsList: {
         gap: 12,
