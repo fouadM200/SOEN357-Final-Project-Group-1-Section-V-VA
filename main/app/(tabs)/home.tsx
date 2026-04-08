@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Image,
     ScrollView,
@@ -10,40 +10,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useFocusEffect } from "@react-navigation/native";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import Calendar from "../../components/Calendar";
 import TodayReportCard from "../../components/TodayReportCard";
+import calorieTrackerData from "../../data/calorieTrackerData.json";
+import type { MealSection } from "@/types/calorieTracker";
 
-const reportCards = [
-    {
-        title: "Workout completed",
-        number: "20",
-        unit: "Minutes left",
-        icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
-        progress: 0.72,
-    },
-    {
-        title: "Active Calories",
-        number: "1105",
-        unit: "Calories left",
-        icon: "flame-outline" as keyof typeof Ionicons.glyphMap,
-        progress: 0.58,
-    },
-    {
-        title: "Heart Rate",
-        number: "86",
-        unit: "BPM",
-        icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
-        progress: 0.82,
-    },
-    {
-        title: "Steps",
-        number: "2250",
-        unit: "Steps left",
-        icon: "footsteps-outline" as keyof typeof Ionicons.glyphMap,
-        progress: 0.35,
-    },
-];
+const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
 
 const badges = [
     "Completed your first workout session",
@@ -51,19 +25,103 @@ const badges = [
     "Reached your daily calorie intake goal for 7 days in a row",
 ];
 
+function formatDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [sectionsForSelectedDate, setSectionsForSelectedDate] = useState<MealSection[]>([]);
+
+    const selectedDateKey = useMemo(
+        () => formatDateKey(selectedDate),
+        [selectedDate]
+    );
+
+    const loadFirstName = async () => {
+        const savedFirstName = await AsyncStorage.getItem("firstName");
+        if (savedFirstName) {
+            setFirstName(savedFirstName);
+        }
+    };
+
+    const loadCaloriesForSelectedDate = useCallback(async () => {
+        try {
+            const savedSectionsByDate = await AsyncStorage.getItem(STORAGE_SECTIONS_KEY);
+
+            if (!savedSectionsByDate) {
+                setSectionsForSelectedDate([]);
+                return;
+            }
+
+            const parsedSectionsByDate = JSON.parse(
+                savedSectionsByDate
+            ) as Record<string, MealSection[]>;
+
+            setSectionsForSelectedDate(parsedSectionsByDate[selectedDateKey] ?? []);
+        } catch (error) {
+            console.error("Failed to load homepage calorie data:", error);
+            setSectionsForSelectedDate([]);
+        }
+    }, [selectedDateKey]);
 
     useEffect(() => {
-        const loadFirstName = async () => {
-            const savedFirstName = await AsyncStorage.getItem("firstName");
-            if (savedFirstName) {
-                setFirstName(savedFirstName);
-            }
-        };
-
         loadFirstName();
     }, []);
+
+    useEffect(() => {
+        loadCaloriesForSelectedDate();
+    }, [loadCaloriesForSelectedDate]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadFirstName();
+            loadCaloriesForSelectedDate();
+        }, [loadCaloriesForSelectedDate])
+    );
+
+    const totalConsumed = sectionsForSelectedDate.reduce(
+        (sum, section) => sum + section.current,
+        0
+    );
+
+    const calorieGoal = calorieTrackerData.calorieSummary.goal;
+    const totalRemaining = Math.max(calorieGoal - totalConsumed, 0);
+
+    const reportCards = [
+        {
+            title: "Workout completed",
+            number: "20",
+            unit: "Minutes left",
+            icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
+            progress: 0.72,
+        },
+        {
+            title: "Active Calories",
+            number: String(totalRemaining),
+            unit: "Calories left",
+            icon: "flame-outline" as keyof typeof Ionicons.glyphMap,
+            progress: calorieGoal > 0 ? totalConsumed / calorieGoal : 0,
+        },
+        {
+            title: "Heart Rate",
+            number: "86",
+            unit: "BPM",
+            icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
+            progress: 0.82,
+        },
+        {
+            title: "Steps",
+            number: "2250",
+            unit: "Steps left",
+            icon: "footsteps-outline" as keyof typeof Ionicons.glyphMap,
+            progress: 0.35,
+        },
+    ];
 
     return (
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -86,7 +144,7 @@ export default function HomePage() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.content}>
-                        <Calendar />
+                        <Calendar onDateChange={setSelectedDate} />
 
                         <View style={styles.sectionDivider} />
 
