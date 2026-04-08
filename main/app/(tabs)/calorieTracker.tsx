@@ -26,7 +26,7 @@ import type {
     ProgressRingProps,
 } from "@/types/calorieTracker";
 
-const STORAGE_SECTIONS_KEY = "calorieTrackerSections";
+const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
 const STORAGE_WATER_KEY = "calorieTrackerWaterIntakeByDate";
 
 function formatDateKey(date: Date) {
@@ -34,6 +34,14 @@ function formatDateKey(date: Date) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+}
+
+function createDefaultSections() {
+    return (calorieTrackerData.mealSections as MealSection[]).map((section) => ({
+        ...section,
+        current: 0,
+        meals: [],
+    }));
 }
 
 function ProgressRing({
@@ -138,7 +146,7 @@ function MealSectionCard({
 }
 
 export default function CalorieTrackerPage() {
-    const { calorieSummary, mealSections } = calorieTrackerData;
+    const { calorieSummary } = calorieTrackerData;
 
     const params = useLocalSearchParams<CalorieTrackerParams>();
 
@@ -154,21 +162,24 @@ export default function CalorieTrackerPage() {
 
     const [waterIntake, setWaterIntake] = useState(0);
     const [waterByDate, setWaterByDate] = useState<Record<string, number>>({});
-    const [sections, setSections] = useState<MealSection[]>(mealSections as MealSection[]);
+    const [sections, setSections] = useState<MealSection[]>(createDefaultSections());
+    const [sectionsByDate, setSectionsByDate] = useState<Record<string, MealSection[]>>({});
     const [isStorageLoaded, setIsStorageLoaded] = useState(false);
     const lastProcessedRefresh = useRef<string | null>(null);
 
     useEffect(() => {
         const loadStoredData = async () => {
             try {
-                const [savedSections, savedWater] = await Promise.all([
+                const [savedSectionsByDate, savedWater] = await Promise.all([
                     AsyncStorage.getItem(STORAGE_SECTIONS_KEY),
                     AsyncStorage.getItem(STORAGE_WATER_KEY),
                 ]);
 
-                if (savedSections) {
-                    const parsedSections = JSON.parse(savedSections) as MealSection[];
-                    setSections(parsedSections);
+                if (savedSectionsByDate) {
+                    const parsedSectionsByDate = JSON.parse(savedSectionsByDate) as Record<string, MealSection[]>;
+                    setSectionsByDate(parsedSectionsByDate);
+                } else {
+                    setSectionsByDate({});
                 }
 
                 if (savedWater) {
@@ -199,16 +210,16 @@ export default function CalorieTrackerPage() {
             return;
         }
 
-        const saveSections = async () => {
+        const saveSectionsByDate = async () => {
             try {
-                await AsyncStorage.setItem(STORAGE_SECTIONS_KEY, JSON.stringify(sections));
+                await AsyncStorage.setItem(STORAGE_SECTIONS_KEY, JSON.stringify(sectionsByDate));
             } catch (error) {
-                console.error("Failed to save sections:", error);
+                console.error("Failed to save sections by date:", error);
             }
         };
 
-        saveSections();
-    }, [sections, isStorageLoaded]);
+        saveSectionsByDate();
+    }, [sectionsByDate, isStorageLoaded]);
 
     useEffect(() => {
         if (!isStorageLoaded) {
@@ -232,7 +243,8 @@ export default function CalorieTrackerPage() {
         }
 
         setWaterIntake(waterByDate[selectedDateKey] ?? 0);
-    }, [selectedDateKey, waterByDate, isStorageLoaded]);
+        setSections(sectionsByDate[selectedDateKey] ?? createDefaultSections());
+    }, [selectedDateKey, waterByDate, sectionsByDate, isStorageLoaded]);
 
     useEffect(() => {
         if (!isStorageLoaded) {
@@ -264,8 +276,8 @@ export default function CalorieTrackerPage() {
             imageKey: params.addedImageKey || "",
         };
 
-        setSections((prevSections) =>
-            prevSections.map((section) => {
+        setSections((prevSections) => {
+            const updatedSections = prevSections.map((section) => {
                 if (section.id !== params.addedSection) {
                     return section;
                 }
@@ -275,11 +287,18 @@ export default function CalorieTrackerPage() {
                     current: section.current + newMeal.calories,
                     meals: [...section.meals, newMeal],
                 };
-            })
-        );
+            });
+
+            setSectionsByDate((prev) => ({
+                ...prev,
+                [selectedDateKey]: updatedSections,
+            }));
+
+            return updatedSections;
+        });
 
         lastProcessedRefresh.current = params.refresh;
-    }, [params, isStorageLoaded]);
+    }, [params, isStorageLoaded, selectedDateKey]);
 
     const totalConsumed = sections.reduce((sum, section) => sum + section.current, 0);
 
