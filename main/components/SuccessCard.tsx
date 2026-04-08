@@ -2,13 +2,7 @@ import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
-type SuccessCardProps = {
-    visible: boolean;
-    title: string;
-    buttonText?: string;
-    loginRoute?: string;
-};
+import type { SuccessCardProps } from "@/types/successCard";
 
 export default function SuccessCard({
                                         visible,

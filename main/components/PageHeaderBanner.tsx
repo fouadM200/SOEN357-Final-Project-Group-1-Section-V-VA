@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import {
     StyleSheet,
     Text,
@@ -6,21 +6,7 @@ import {
     View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
-type HeaderButton = {
-    label: string;
-    onPress?: () => void;
-    iconName?: keyof typeof Ionicons.glyphMap;
-    active?: boolean;
-};
-
-type PageHeaderBannerProps = {
-    title: string;
-    description?: string;
-    buttons?: HeaderButton[];
-    logo?: ReactNode;
-    leftAccessory?: ReactNode;
-};
+import type { PageHeaderBannerProps } from "@/types/pageHeaderBanner";
 
 export default function PageHeaderBanner({
                                              title,

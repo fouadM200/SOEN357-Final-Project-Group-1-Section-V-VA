@@ -12,10 +12,7 @@ import {
     View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
-type CalendarProps = {
-    onDateChange?: (date: Date) => void;
-};
+import type { CalendarProps } from "@/types/calendar";
 
 const MONTHS = [
     "January",
@@ -390,7 +387,7 @@ const styles = StyleSheet.create({
         color: "#FFF",
     },
     dateText: {
-        fontSize: 20,
+        fontSize: 30,
         fontWeight: "800",
         color: "#000",
     },

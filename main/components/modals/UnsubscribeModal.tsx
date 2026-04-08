@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
-import {Coach} from "@/types/coach";
+import type { UnsubscribeModalProps } from "@/types/unsubscribeModal";
 
-interface Props {
-    visible: boolean;
-    onCancel: () => void;
-    onUnsubscribe: () => void;
-    coach: Coach;
-}
-
-export default function UnsubscribeModal({ visible, onCancel, onUnsubscribe, coach }: Props) {
+export default function UnsubscribeModal({ visible, onCancel, onUnsubscribe, coach }: UnsubscribeModalProps) {
     if (!coach) return null;
 
     return (
@@ -98,7 +91,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 48,
         borderRadius: 24,
-        backgroundColor: "#E55656", // Reddish button
+        backgroundColor: "#E55656",
         justifyContent: "center",
         alignItems: "center",
     },

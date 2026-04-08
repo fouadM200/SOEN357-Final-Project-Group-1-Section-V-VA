@@ -14,20 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeaderBanner from "../components/PageHeaderBanner";
 import { mealImages } from "../data/mealImages";
 import CustomBottomNavigation from "@/components/CustomBottomNavigation";
-
-type EstimatedMeal = {
-    name: string;
-    calories: number;
-    protein: number;
-    fat: number;
-    carbs: number;
-    imageKey?: string;
-};
+import type { AddMealParams, EstimatedMeal } from "@/types/addMeal";
 
 const API_BASE_URL = "http://127.0.0.1:5000";
 
 export default function AddMealPage() {
-    const params = useLocalSearchParams<{ section?: string }>();
+    const params = useLocalSearchParams<AddMealParams>();
     const section = params.section ?? "meal";
 
     const [mealName, setMealName] = useState("");

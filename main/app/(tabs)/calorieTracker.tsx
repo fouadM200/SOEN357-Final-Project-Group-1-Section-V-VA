@@ -17,25 +17,15 @@ import calorieTrackerData from "../../data/calorieTrackerData.json";
 import { mealImages } from "../../data/mealImages";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import Calendar from "../../components/Calendar";
-
-type Meal = {
-    id: string;
-    name: string;
-    calories: number;
-    protein: number;
-    fat: number;
-    carbs: number;
-    imageKey: string;
-};
-
-type MealSection = {
-    id: string;
-    title: string;
-    current: number;
-    goal: number;
-    icon: keyof typeof Ionicons.glyphMap;
-    meals: Meal[];
-};
+import type {
+    CalorieTrackerParams,
+    MacroBarProps,
+    Meal,
+    MealCardProps,
+    MealSection,
+    MealSectionCardProps,
+    ProgressRingProps,
+} from "@/types/calorieTracker";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSections";
 const STORAGE_WATER_KEY = "calorieTrackerWaterIntake";
@@ -44,45 +34,35 @@ function ProgressRing({
                           progress,
                           size = 92,
                           strokeWidth = 12,
-                      }: {
-    progress: number;
-    size?: number;
-    strokeWidth?: number;
-}) {
+                      }: ProgressRingProps) {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const clampedProgress = Math.max(0, Math.min(progress, 1));
-    const dashOffset = circumference * (1 - clampedProgress);
+    const strokeDashoffset = circumference * (1 - clampedProgress);
 
     return (
         <View style={styles.ringWrapper}>
-            <Svg width={size} height={size}>
+            <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
                 <Circle
+                    stroke="#D9D9D9"
+                    fill="none"
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke="#E8E8E8"
                     strokeWidth={strokeWidth}
-                    fill="none"
                 />
                 <Circle
+                    stroke="#1EA7FF"
+                    fill="none"
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke="#1EA7FF"
                     strokeWidth={strokeWidth}
-                    fill="none"
                     strokeLinecap="round"
                     strokeDasharray={`${circumference} ${circumference}`}
-                    strokeDashoffset={-dashOffset}
-                    rotation={-90}
-                    origin={`${size / 2}, ${size / 2}`}
+                    strokeDashoffset={strokeDashoffset}
                 />
             </Svg>
-
-            <View style={styles.ringInner}>
-                <Ionicons name="flame" size={34} color="#000" />
-            </View>
         </View>
     );
 }
@@ -92,26 +72,23 @@ function MacroBar({
                       current,
                       goal,
                       progress,
-                  }: {
-    label: string;
-    current: number;
-    goal: number;
-    progress: number;
-}) {
+                  }: MacroBarProps) {
+    const clampedProgress = Math.max(0, Math.min(progress, 1));
+
     return (
         <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>{label}</Text>
-            <View style={styles.macroTrack}>
-                <View style={[styles.macroFill, { width: `${Math.min(progress * 100, 100)}%` }]} />
-            </View>
             <Text style={styles.macroValue}>
-                {current}/{goal} g
+                {current}g/{goal}g
             </Text>
+            <View style={styles.macroTrack}>
+                <View style={[styles.macroFill, { width: `${clampedProgress * 100}%` }]} />
+            </View>
         </View>
     );
 }
 
-function MealCard({ meal }: { meal: Meal }) {
+function MealCard({ meal }: MealCardProps) {
     return (
         <View style={styles.mealCard}>
             {mealImages[meal.imageKey] ? (
@@ -122,13 +99,13 @@ function MealCard({ meal }: { meal: Meal }) {
                 </View>
             )}
 
-            <View style={styles.mealContent}>
+            <View style={styles.mealInfo}>
                 <Text style={styles.mealName}>{meal.name}</Text>
                 <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
 
-                <View style={styles.mealDivider} />
+                <View style={styles.mealInnerDivider} />
 
-                <View style={styles.mealMacrosRow}>
+                <View style={styles.mealMacroRow}>
                     <Text style={styles.mealMacroText}>Protein: {meal.protein}g</Text>
                     <Text style={styles.mealMacroText}>Fat: {meal.fat}g</Text>
                     <Text style={styles.mealMacroText}>Carbs: {meal.carbs}g</Text>
@@ -141,10 +118,7 @@ function MealCard({ meal }: { meal: Meal }) {
 function MealSectionCard({
                              section,
                              onAddPress,
-                         }: {
-    section: MealSection;
-    onAddPress: () => void;
-}) {
+                         }: MealSectionCardProps) {
     return (
         <View style={styles.sectionCard}>
             <View style={styles.sectionHeaderRow}>
@@ -153,7 +127,7 @@ function MealSectionCard({
                     <View style={styles.sectionTitleTextWrap}>
                         <Text style={styles.sectionCardTitle}>{section.title}</Text>
                         <Text style={styles.sectionCardSubtitle}>
-                            {section.current} / {section.goal} kcal
+                            {section.current}/{section.goal} kcal
                         </Text>
                     </View>
                 </View>
@@ -181,16 +155,7 @@ function MealSectionCard({
 export default function CalorieTrackerPage() {
     const { calorieSummary, mealSections } = calorieTrackerData;
 
-    const params = useLocalSearchParams<{
-        addedSection?: string;
-        addedMealName?: string;
-        addedCalories?: string;
-        addedProtein?: string;
-        addedFat?: string;
-        addedCarbs?: string;
-        addedImageKey?: string;
-        refresh?: string;
-    }>();
+    const params = useLocalSearchParams<CalorieTrackerParams>();
 
     const waterGoal = calorieSummary.water.goal;
     const waterStep = 0.5;
@@ -426,27 +391,32 @@ export default function CalorieTrackerPage() {
 
                             <View style={styles.sectionInnerDivider} />
 
-                            <View style={styles.waterSliderWrapper}>
+                            <Slider
+                                style={styles.slider}
+                                minimumValue={0}
+                                maximumValue={waterGoal}
+                                step={waterStep}
+                                value={waterIntake}
+                                onValueChange={handleWaterSliderChange}
+                                minimumTrackTintColor="#1EA7FF"
+                                maximumTrackTintColor="#D9D9D9"
+                                thumbTintColor="#1EA7FF"
+                            />
+
+                            <View style={styles.waterScaleRow}>
+                                <Text style={styles.waterScaleText}>0 L</Text>
+                                <Text style={styles.waterScaleText}>{waterGoal} L</Text>
+                            </View>
+
+                            <View style={styles.waterProgressRow}>
                                 <View style={styles.waterTrack}>
                                     <View
                                         style={[
                                             styles.waterFill,
-                                            { width: `${Math.min(waterProgress * 100, 100)}%` },
+                                            { width: `${Math.max(0, Math.min(waterProgress, 1)) * 100}%` },
                                         ]}
                                     />
                                 </View>
-
-                                <Slider
-                                    style={styles.waterSlider}
-                                    minimumValue={0}
-                                    maximumValue={waterGoal}
-                                    step={waterStep}
-                                    value={waterIntake}
-                                    onValueChange={handleWaterSliderChange}
-                                    minimumTrackTintColor="transparent"
-                                    maximumTrackTintColor="transparent"
-                                    thumbTintColor="#1EA7FF"
-                                />
                             </View>
                         </View>
 
@@ -457,7 +427,9 @@ export default function CalorieTrackerPage() {
                                 onAddPress={() =>
                                     router.push({
                                         pathname: "/add-meal",
-                                        params: { section: section.id },
+                                        params: {
+                                            section: section.id,
+                                        },
                                     })
                                 }
                             />
@@ -472,105 +444,90 @@ export default function CalorieTrackerPage() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#1EA7FF",
+        backgroundColor: "#2EA7F2",
     },
     container: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
-    scrollView: {
-        flex: 1,
-        backgroundColor: "#F5F5F5",
-    },
-    scrollContent: {
-        paddingBottom: 30,
-    },
     headerLogo: {
         width: 120,
         height: 120,
     },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 30,
+    },
     content: {
         paddingHorizontal: 20,
-        paddingTop: 18,
+        paddingTop: 20,
     },
     sectionDivider: {
-        height: 4,
+        height: 3,
         backgroundColor: "#1EA7FF",
-        borderRadius: 4,
+        borderRadius: 3,
         marginVertical: 18,
     },
     pageSectionTitle: {
-        fontSize: 19,
-        fontWeight: "800",
+        fontSize: 22,
+        fontWeight: "900",
         color: "#111",
         marginBottom: 18,
     },
     summaryCard: {
         backgroundColor: "#DCDCDC",
-        borderRadius: 16,
+        borderRadius: 18,
+        paddingVertical: 18,
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        marginBottom: 18,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 4,
+        marginBottom: 20,
     },
     summaryTitle: {
         textAlign: "center",
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "800",
-        color: "#111",
+        color: "#000",
     },
     summaryGoal: {
         textAlign: "center",
-        fontSize: 18,
+        fontSize: 24,
         fontWeight: "900",
         color: "#1EA7FF",
-        marginTop: 2,
+        marginTop: 4,
+        marginBottom: 14,
     },
     summaryMiddleRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginTop: 10,
-        marginBottom: 16,
+        marginBottom: 18,
     },
     sideStat: {
-        width: 82,
         alignItems: "center",
+        width: 90,
     },
     sideStatBlue: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: "900",
         color: "#1EA7FF",
         textAlign: "center",
     },
     sideStatLabel: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: "700",
-        color: "#4A4A4A",
+        color: "#333",
         textAlign: "center",
-        marginTop: 1,
+        marginTop: 2,
     },
     ringWrapper: {
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    ringInner: {
-        position: "absolute",
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: "#F2F2F2",
         justifyContent: "center",
         alignItems: "center",
     },
     macroRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        gap: 10,
+        gap: 12,
     },
     macroItem: {
         flex: 1,
@@ -579,37 +536,37 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "800",
         color: "#111",
-        marginBottom: 4,
-    },
-    macroTrack: {
-        height: 12,
-        backgroundColor: "#F2F2F2",
-        borderRadius: 999,
-        overflow: "hidden",
-        marginBottom: 4,
-    },
-    macroFill: {
-        height: "100%",
-        backgroundColor: "#1EA7FF",
-        borderRadius: 999,
+        marginBottom: 3,
     },
     macroValue: {
         fontSize: 12,
-        fontWeight: "800",
-        color: "#111",
+        fontWeight: "700",
+        color: "#333",
+        marginBottom: 6,
+    },
+    macroTrack: {
+        height: 8,
+        borderRadius: 999,
+        backgroundColor: "#BFBFBF",
+        overflow: "hidden",
+    },
+    macroFill: {
+        height: "100%",
+        borderRadius: 999,
+        backgroundColor: "#1EA7FF",
     },
     waterCard: {
         backgroundColor: "#DCDCDC",
-        borderRadius: 14,
+        borderRadius: 18,
+        paddingVertical: 16,
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        marginBottom: 18,
+        marginBottom: 20,
     },
     sectionCard: {
         backgroundColor: "#DCDCDC",
-        borderRadius: 14,
+        borderRadius: 18,
+        paddingVertical: 16,
         paddingHorizontal: 16,
-        paddingVertical: 14,
         marginBottom: 18,
     },
     sectionHeaderRow: {
@@ -623,59 +580,67 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     sectionTitleTextWrap: {
-        marginLeft: 12,
+        marginLeft: 10,
     },
     sectionCardTitle: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "800",
         color: "#111",
     },
     sectionCardSubtitle: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: "700",
-        color: "#6A6A6A",
+        color: "#333",
+        marginTop: 2,
     },
     addButton: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: "#1EA7FF",
         justifyContent: "center",
         alignItems: "center",
     },
     sectionInnerDivider: {
         height: 2,
-        backgroundColor: "#B6B6B6",
-        marginVertical: 14,
+        backgroundColor: "#B8B8B8",
+        marginVertical: 12,
     },
-    waterSliderWrapper: {
-        marginHorizontal: 10,
-        position: "relative",
-        justifyContent: "center",
-        height: 28,
+    slider: {
+        width: "100%",
+        height: 40,
+    },
+    waterScaleRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 2,
+        marginBottom: 10,
+    },
+    waterScaleText: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#333",
+    },
+    waterProgressRow: {
+        marginTop: 4,
     },
     waterTrack: {
-        height: 18,
-        backgroundColor: "#F2F2F2",
+        height: 10,
         borderRadius: 999,
+        backgroundColor: "#BFBFBF",
         overflow: "hidden",
     },
     waterFill: {
         height: "100%",
-        backgroundColor: "#1EA7FF",
         borderRadius: 999,
-    },
-    waterSlider: {
-        position: "absolute",
-        width: "100%",
-        height: 28,
+        backgroundColor: "#1EA7FF",
     },
     mealsList: {
-        gap: 14,
+        gap: 12,
     },
     mealCard: {
-        backgroundColor: "#F5F5F5",
-        borderRadius: 14,
+        backgroundColor: "#E9E9E9",
+        borderRadius: 12,
         padding: 12,
         flexDirection: "row",
         alignItems: "flex-start",
@@ -691,24 +656,25 @@ const styles = StyleSheet.create({
         height: 52,
         borderRadius: 26,
         marginRight: 12,
-        backgroundColor: "#E0E0E0",
-        alignItems: "center",
+        backgroundColor: "#F0F0F0",
         justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: "#D0D0D0",
     },
     noImageText: {
-        fontSize: 10,
+        fontSize: 8,
         fontWeight: "700",
-        color: "#777",
+        color: "#7A7A7A",
         textAlign: "center",
     },
-    mealContent: {
+    mealInfo: {
         flex: 1,
     },
     mealName: {
         fontSize: 14,
         fontWeight: "800",
         color: "#111",
-        lineHeight: 18,
     },
     mealCalories: {
         fontSize: 15,
@@ -716,18 +682,18 @@ const styles = StyleSheet.create({
         color: "#1EA7FF",
         marginTop: 2,
     },
-    mealDivider: {
+    mealInnerDivider: {
         height: 1.5,
-        backgroundColor: "#B8B8B8",
+        backgroundColor: "#C3C3C3",
         marginVertical: 8,
     },
-    mealMacrosRow: {
+    mealMacroRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         gap: 8,
     },
     mealMacroText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: "700",
         color: "#333",
     },

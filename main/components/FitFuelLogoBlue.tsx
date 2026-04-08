@@ -1,22 +1,17 @@
+import React from "react";
 import { Image, StyleSheet, View } from "react-native";
+import type { FitFuelLogoProps } from "@/types/fitFuelLogoBlue";
 
-type FitFuelLogoProps = {
-    width?: number;
-    height?: number;
-    opacity?: number;
-};
-
-
-export default function FitFuelLogo({
-                                        width = 180,
-                                        height = 180,
-                                    }: FitFuelLogoProps) {
+export default function FitFuelLogoBlue({
+                                            width = 100,
+                                            height = 100,
+                                            opacity = 1,
+                                        }: Readonly<FitFuelLogoProps>) {
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { opacity }]}>
             <Image
                 source={require("../assets/images/fitfuel-logo-blue.png")}
-                style={[styles.logo, { width, height }]}
-                resizeMode="contain"
+                style={{ width, height, resizeMode: "contain" }}
             />
         </View>
     );
@@ -24,8 +19,7 @@ export default function FitFuelLogo({
 
 const styles = StyleSheet.create({
     container: {
-        alignItems: "center",
         justifyContent: "center",
+        alignItems: "center",
     },
-    logo: {},
 });
