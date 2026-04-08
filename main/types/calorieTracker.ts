@@ -51,3 +51,19 @@ export type CalorieTrackerParams = {
     addedImageKey?: string;
     refresh?: string;
 };
+
+export type CalorieIntakeSummaryCardProps = {
+    calorieGoal: number;
+    totalConsumed: number;
+    totalRemaining: number;
+    calorieProgress: number;
+    totalProtein: number;
+    proteinGoal: number;
+    proteinProgress: number;
+    totalFat: number;
+    fatGoal: number;
+    fatProgress: number;
+    totalCarbs: number;
+    carbsGoal: number;
+    carbsProgress: number;
+};
