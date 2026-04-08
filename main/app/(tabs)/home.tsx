@@ -10,37 +10,37 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Svg, { Circle } from "react-native-svg";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import Calendar from "../../components/Calendar";
+import TodayReportCard from "../../components/TodayReportCard";
 
 const reportCards = [
     {
         title: "Workout completed",
-        value: "20",
-        label: "Minutes left",
-        icon: "barbell-outline",
+        number: "20",
+        unit: "Minutes left",
+        icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
         progress: 0.72,
     },
     {
         title: "Active Calories",
-        value: "1105",
-        label: "Calories left",
-        icon: "flame-outline",
+        number: "1105",
+        unit: "Calories left",
+        icon: "flame-outline" as keyof typeof Ionicons.glyphMap,
         progress: 0.58,
     },
     {
         title: "Heart Rate",
-        value: "86",
-        label: "BPM",
-        icon: "heart-outline",
+        number: "86",
+        unit: "BPM",
+        icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
         progress: 0.82,
     },
     {
         title: "Steps",
-        value: "2250",
-        label: "Steps left",
-        icon: "footsteps-outline",
+        number: "2250",
+        unit: "Steps left",
+        icon: "footsteps-outline" as keyof typeof Ionicons.glyphMap,
         progress: 0.35,
     },
 ];
@@ -50,55 +50,6 @@ const badges = [
     "Worked out 3 days in a row",
     "Reached your daily calorie intake goal for 7 days in a row",
 ];
-
-function ReportRing({
-                        icon,
-                        progress,
-                    }: {
-    icon: keyof typeof Ionicons.glyphMap;
-    progress: number;
-}) {
-    const size = 68;
-    const strokeWidth = 6;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const clampedProgress = Math.max(0, Math.min(progress, 1));
-    const dashOffset = circumference * (1 - clampedProgress);
-
-    return (
-        <View style={styles.circleWrapper}>
-            <View style={styles.ringContainer}>
-                <Svg width={size} height={size} style={styles.ringSvg}>
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="#D9D9D9"
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                    />
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="#1EA7FF"
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${circumference} ${circumference}`}
-                        strokeDashoffset={dashOffset}
-                        rotation={-90}
-                        origin={`${size / 2}, ${size / 2}`}
-                    />
-                </Svg>
-
-                <View style={styles.circleInner}>
-                    <Ionicons name={icon} size={24} color="#000" />
-                </View>
-            </View>
-        </View>
-    );
-}
 
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
@@ -143,17 +94,14 @@ export default function HomePage() {
 
                         <View style={styles.reportGrid}>
                             {reportCards.map((card, index) => (
-                                <View key={index} style={styles.reportCard}>
-                                    <Text style={styles.reportTitle}>{card.title}</Text>
-
-                                    <ReportRing
-                                        icon={card.icon as keyof typeof Ionicons.glyphMap}
-                                        progress={card.progress}
-                                    />
-
-                                    <Text style={styles.reportValue}>{card.value}</Text>
-                                    <Text style={styles.reportLabel}>{card.label}</Text>
-                                </View>
+                                <TodayReportCard
+                                    key={index}
+                                    title={card.title}
+                                    number={card.number}
+                                    unit={card.unit}
+                                    progress={card.progress}
+                                    icon={<Ionicons name={card.icon} size={24} color="#000" />}
+                                />
                             ))}
                         </View>
 
@@ -268,62 +216,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
-        gap: 12,
-    },
-    reportCard: {
-        width: "48%",
-        backgroundColor: "#EDEDED",
-        borderRadius: 10,
-        paddingVertical: 14,
-        paddingHorizontal: 10,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    reportTitle: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#111",
-        textAlign: "center",
-        marginBottom: 10,
-    },
-    circleWrapper: {
-        marginBottom: 10,
-    },
-    ringContainer: {
-        width: 68,
-        height: 68,
-        justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-    },
-    ringSvg: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-    },
-    circleInner: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: "#F5F5F5",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    reportValue: {
-        fontSize: 28,
-        fontWeight: "800",
-        color: "#111",
-        lineHeight: 32,
-    },
-    reportLabel: {
-        fontSize: 13,
-        color: "#111",
-        fontWeight: "600",
-        textAlign: "center",
+        marginTop: 2,
     },
     questionRow: {
         flexDirection: "row",
