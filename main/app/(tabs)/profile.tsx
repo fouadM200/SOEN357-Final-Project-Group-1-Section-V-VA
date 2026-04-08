@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PageHeaderBanner from "@/components/PageHeaderBanner";
 import { getCurrentUser, logoutUser, User } from "@/utils/authStorage";
+import type { InfoRowProps } from "@/types/profile";
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -111,11 +112,6 @@ export default function ProfilePage() {
     );
 }
 
-type InfoRowProps = {
-    label: string;
-    value: string;
-};
-
 function InfoRow({ label, value }: InfoRowProps) {
     return (
         <View style={styles.infoRow}>
@@ -138,7 +134,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#F5F5F5",
     },
     headerLogo: {
         width: 120,
@@ -146,72 +141,72 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
-        paddingTop: 28,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        alignItems: "center",
     },
     profileRow: {
-        flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 20,
+        marginBottom: 24,
     },
     avatar: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: "#000",
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 16,
+        marginBottom: 12,
     },
     avatarText: {
-        color: "#fff",
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: "800",
+        color: "#1EA7FF",
     },
     name: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: "800",
         color: "#000",
-        flexShrink: 1,
+        textAlign: "center",
     },
     divider: {
-        height: 3,
-        backgroundColor: "#1DA1F2",
-        marginHorizontal: 20,
-        marginTop: 22,
-        marginBottom: 18,
-        borderRadius: 4,
+        width: "100%",
+        height: 2,
+        backgroundColor: "#CFCFCF",
+        marginBottom: 22,
     },
     infoSection: {
-        paddingHorizontal: 24,
-        gap: 16,
+        width: "100%",
+        marginBottom: 34,
     },
     infoRow: {
-        flexDirection: "row",
-        alignItems: "flex-start",
+        marginBottom: 16,
     },
     label: {
-        width: 120,
         fontSize: 16,
-        fontWeight: "700",
+        fontWeight: "800",
         color: "#111",
+        marginBottom: 4,
     },
     value: {
-        flex: 1,
         fontSize: 16,
-        color: "#555",
         fontWeight: "500",
+        color: "#333",
     },
     logoutButton: {
-        marginTop: 40,
-        marginHorizontal: 32,
-        backgroundColor: "#111",
-        height: 52,
-        borderRadius: 26,
-        flexDirection: "row",
+        width: "100%",
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: "#1E1E1E",
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "row",
         gap: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
     },
     logoutText: {
         color: "#fff",

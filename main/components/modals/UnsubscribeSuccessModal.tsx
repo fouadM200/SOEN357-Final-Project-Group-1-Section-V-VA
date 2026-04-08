@@ -1,14 +1,13 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React from "react";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import type { UnsubscribeSuccessModalProps } from "@/types/unsubscribeSuccessModal";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-interface Props {
-    visible: boolean;
-    coachName?: string;
-    onGoBack: () => void;
-}
-
-export default function UnsubscribeSuccessModal({ visible, coachName, onGoBack }: Props) {
+export default function UnsubscribeSuccessModal({
+                                                    visible,
+                                                    coachName,
+                                                    onGoBack,
+                                                }: Readonly<UnsubscribeSuccessModalProps>) {
     return (
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.modalOverlay}>
