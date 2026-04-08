@@ -22,7 +22,7 @@ export default function TodayReportCard({
             <Text style={styles.title}>{title}</Text>
 
             <View style={styles.ringWrapper}>
-                <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+                <Svg width={size} height={size}>
                     <Circle
                         stroke="#D9D9D9"
                         fill="none"
@@ -40,7 +40,9 @@ export default function TodayReportCard({
                         strokeWidth={strokeWidth}
                         strokeLinecap="round"
                         strokeDasharray={`${circumference} ${circumference}`}
-                        strokeDashoffset={strokeDashoffset}
+                        strokeDashoffset={-strokeDashoffset}
+                        rotation={-90}
+                        origin={`${size / 2}, ${size / 2}`}
                     />
                 </Svg>
 
@@ -56,7 +58,7 @@ export default function TodayReportCard({
 const styles = StyleSheet.create({
     card: {
         width: "48%",
-        backgroundColor: "#F2F2F2",
+        backgroundColor: "#EDEDED",
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 10,
