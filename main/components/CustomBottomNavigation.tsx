@@ -6,11 +6,11 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const NAV_ITEMS = [
-  { name: 'home', label: 'Home', icon: 'home', route: '/(tabs)/home' },
-  { name: 'explore', label: 'Exercises', icon: 'dumbbell', route: '/(tabs)/explore' },
-  { name: 'coach', label: 'Coach', icon: 'whistle', route: '/(tabs)/coach' },
-  { name: 'calorieTracker', label: 'Calories', icon: 'apple', route: '/(tabs)/calorieTracker' },
-  { name: 'profile', label: 'Profile', icon: 'account', route: '/(tabs)/profile' },
+    { name: 'home', label: 'Home', icon: 'home', route: '/(tabs)/home' },
+    { name: 'explore', label: 'Exercises', icon: 'dumbbell', route: '/(tabs)/explore' },
+    { name: 'coach', label: 'Coach', icon: 'whistle', route: '/(tabs)/coach' },
+    { name: 'calorieTracker', label: 'Calories', icon: 'fire', route: '/(tabs)/calorieTracker' },
+    { name: 'profile', label: 'Profile', icon: 'account', route: '/(tabs)/profile' },
 ];
 
 export default function CustomBottomNavigation() {

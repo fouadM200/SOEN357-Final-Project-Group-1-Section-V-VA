@@ -51,7 +51,7 @@ export default function TrackerSectionCard({
 
 const styles = StyleSheet.create({
     sectionCard: {
-        backgroundColor: "#DCDCDC",
+        backgroundColor: "#E7E7E7",
         borderRadius: 18,
         paddingVertical: 16,
         paddingHorizontal: 16,

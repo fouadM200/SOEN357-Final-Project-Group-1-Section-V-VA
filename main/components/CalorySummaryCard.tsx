@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import type { CalorieIntakeSummaryCardProps } from "@/types/calorieTracker";
 
@@ -8,11 +8,11 @@ function ProgressRing({
                           progress,
                           size = 92,
                           strokeWidth = 12,
-                      }: {
+                      }: Readonly<{
     progress: number;
     size?: number;
     strokeWidth?: number;
-}) {
+}>) {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const clampedProgress = Math.max(0, Math.min(progress, 1));
@@ -46,7 +46,7 @@ function ProgressRing({
             </Svg>
 
             <View style={styles.ringIconWrapper}>
-                <Ionicons name="flame-outline" size={34} color="#111" />
+                <MaterialCommunityIcons name="fire" size={50} color="#111" />
             </View>
         </View>
     );
@@ -57,12 +57,12 @@ function MacroBar({
                       current,
                       goal,
                       progress,
-                  }: {
+                  }: Readonly<{
     label: string;
     current: number;
     goal: number;
     progress: number;
-}) {
+}>) {
     const clampedProgress = Math.max(0, Math.min(progress, 1));
 
     return (
@@ -92,7 +92,7 @@ export default function CalorySummaryCard({
                                               totalCarbs,
                                               carbsGoal,
                                               carbsProgress,
-                                          }: CalorieIntakeSummaryCardProps) {
+                                          }: Readonly<CalorieIntakeSummaryCardProps>) {
     return (
         <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Calorie Goal</Text>
@@ -138,7 +138,7 @@ export default function CalorySummaryCard({
 
 const styles = StyleSheet.create({
     summaryCard: {
-        backgroundColor: "#DCDCDC",
+        backgroundColor: "#E7E7E7",
         borderRadius: 18,
         paddingVertical: 18,
         paddingHorizontal: 16,
