@@ -57,7 +57,7 @@ function getCenteredIndex(offsetY: number, maxIndex: number) {
     return Math.max(0, Math.min(rawIndex, maxIndex));
 }
 
-export default function Calendar({ onDateChange }: CalendarProps) {
+export default function Calendar({ onDateChange }: Readonly<CalendarProps>) {
     const today = useMemo(() => new Date(), []);
     const currentYear = today.getFullYear();
 
@@ -70,6 +70,7 @@ export default function Calendar({ onDateChange }: CalendarProps) {
     const [pickerVisible, setPickerVisible] = useState(false);
     const [tempMonth, setTempMonth] = useState(today.getMonth());
     const [tempYear, setTempYear] = useState(today.getFullYear());
+    const [shouldAnimateScroll, setShouldAnimateScroll] = useState(false);
 
     const monthListRef = useRef<FlatList<string>>(null);
     const yearListRef = useRef<FlatList<number>>(null);
@@ -100,17 +101,25 @@ export default function Calendar({ onDateChange }: CalendarProps) {
         const selectedIndex = selectedDay - 1;
         const cardWidth = 74;
         const cardGap = 10;
-        const offset = Math.max(0, selectedIndex * (cardWidth + cardGap) - 135);
+        const visibleAreaCenterOffset = 135;
+        const offset = Math.max(
+            0,
+            selectedIndex * (cardWidth + cardGap) - visibleAreaCenterOffset
+        );
 
         const timer = setTimeout(() => {
             daysScrollRef.current?.scrollTo({
                 x: offset,
-                animated: false,
+                animated: shouldAnimateScroll,
             });
+
+            if (shouldAnimateScroll) {
+                setShouldAnimateScroll(false);
+            }
         }, 80);
 
         return () => clearTimeout(timer);
-    }, [selectedDay, selectedMonth, selectedYear]);
+    }, [selectedDay, selectedMonth, selectedYear, shouldAnimateScroll]);
 
     const openPicker = () => {
         setTempMonth(selectedMonth);
@@ -123,7 +132,7 @@ export default function Calendar({ onDateChange }: CalendarProps) {
                 animated: false,
             });
 
-            const yearIndex = years.findIndex((year) => year === selectedYear);
+            const yearIndex = years.indexOf(selectedYear);
 
             if (yearIndex !== -1) {
                 yearListRef.current?.scrollToOffset({
@@ -135,6 +144,7 @@ export default function Calendar({ onDateChange }: CalendarProps) {
     };
 
     const goToToday = () => {
+        setShouldAnimateScroll(true);
         setSelectedDate(new Date());
     };
 
@@ -142,11 +152,13 @@ export default function Calendar({ onDateChange }: CalendarProps) {
         const maxDay = getDaysInMonth(tempYear, tempMonth);
         const safeDay = Math.min(selectedDay, maxDay);
 
+        setShouldAnimateScroll(true);
         setSelectedDate(new Date(tempYear, tempMonth, safeDay));
         setPickerVisible(false);
     };
 
     const handleSelectDay = (day: number) => {
+        setShouldAnimateScroll(false);
         setSelectedDate(new Date(selectedYear, selectedMonth, day));
     };
 
