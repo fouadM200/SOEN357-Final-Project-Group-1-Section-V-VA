@@ -24,7 +24,8 @@ import UnsubscribeSuccessModal from "@/components/modals/UnsubscribeSuccessModal
 export default function SubscriptionsPage() {
     const [isUnsubscribeModalVisible, setIsUnsubscribeModalVisible] = useState(false);
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-    const [selectedCoachToUnsubscribe, setSelectedCoachToUnsubscribe] = useState<Coach | null>(null);
+    const [selectedCoachToUnsubscribe, setSelectedCoachToUnsubscribe] =
+        useState<Coach | null>(null);
 
     const coaches = useCoaches();
     const subscribedCoachIds = useSubscribedCoachIds();
@@ -86,9 +87,9 @@ export default function SubscriptionsPage() {
                         onCancel={() => {
                             setIsUnsubscribeModalVisible(false);
                         }}
-                        onUnsubscribe={() => {
+                        onUnsubscribe={async () => {
                             if (selectedCoachToUnsubscribe) {
-                                unsubscribeFromCoach(selectedCoachToUnsubscribe.id);
+                                await unsubscribeFromCoach(selectedCoachToUnsubscribe.id);
                             }
                             setIsUnsubscribeModalVisible(false);
                             setIsSuccessModalVisible(true);
@@ -113,10 +114,10 @@ export default function SubscriptionsPage() {
 function SubscriptionCard({
                               coach,
                               onUnsubscribe,
-                          }: {
+                          }: Readonly<{
     coach: Coach;
     onUnsubscribe: () => void;
-}) {
+}>) {
     return (
         <View style={styles.card}>
             <View style={styles.cardTopRow}>

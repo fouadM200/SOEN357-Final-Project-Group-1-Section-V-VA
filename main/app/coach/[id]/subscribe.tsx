@@ -46,7 +46,7 @@ export default function SubscribePage() {
     const [country, setCountry] = useState("");
     const [zip, setZip] = useState("");
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (
             !cardName ||
             !cardNumber ||
@@ -63,8 +63,9 @@ export default function SubscribePage() {
         }
 
         if (id) {
-            subscribeToCoach(id);
+            await subscribeToCoach(id);
         }
+
         setIsConfirmed(true);
     };
 
@@ -242,11 +243,16 @@ export default function SubscribePage() {
                         placeholderTextColor="#ccc"
                         value={zip}
                         onChangeText={(text) => {
-                            const cleaned = text.toUpperCase().replaceAll(/[^A-Z0-9]/g, "").slice(0, 6);
+                            const cleaned = text
+                                .toUpperCase()
+                                .replaceAll(/[^A-Z0-9]/g, "")
+                                .slice(0, 6);
+
                             const formatted =
                                 cleaned.length > 3
                                     ? `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`
                                     : cleaned;
+
                             setZip(formatted);
                         }}
                         autoCapitalize="characters"
