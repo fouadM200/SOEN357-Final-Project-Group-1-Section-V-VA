@@ -12,7 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import {
     useCoaches,
-    useSubscribedCoachIds,
+    useSubscriptions,
     unsubscribeFromCoach,
 } from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
@@ -21,6 +21,23 @@ import CustomBottomNavigation from "../../components/CustomBottomNavigation";
 import UnsubscribeModal from "@/components/modals/UnsubscribeModal";
 import UnsubscribeSuccessModal from "@/components/modals/UnsubscribeSuccessModal";
 
+function getNextRenewalDate(subscriptionDateString: string) {
+    const subscriptionDate = new Date(subscriptionDateString);
+
+    if (Number.isNaN(subscriptionDate.getTime())) {
+        return "Renewal date unavailable";
+    }
+
+    const nextRenewalDate = new Date(subscriptionDate);
+    nextRenewalDate.setMonth(nextRenewalDate.getMonth() + 1);
+
+    return nextRenewalDate.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
 export default function SubscriptionsPage() {
     const [isUnsubscribeModalVisible, setIsUnsubscribeModalVisible] = useState(false);
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
@@ -28,11 +45,33 @@ export default function SubscriptionsPage() {
         useState<Coach | null>(null);
 
     const coaches = useCoaches();
-    const subscribedCoachIds = useSubscribedCoachIds();
+    const subscriptions = useSubscriptions();
 
     const subscribedCoaches = useMemo(() => {
-        return coaches.filter((coach) => subscribedCoachIds.includes(coach.id));
-    }, [coaches, subscribedCoachIds]);
+        return subscriptions
+            .map((subscription) => {
+                const coach = coaches.find(
+                    (currentCoach) => currentCoach.id === subscription.coachId
+                );
+
+                if (!coach) {
+                    return null;
+                }
+
+                return {
+                    coach,
+                    subscribedAt: subscription.subscribedAt,
+                };
+            })
+            .filter(
+                (
+                    item
+                ): item is {
+                    coach: Coach;
+                    subscribedAt: string;
+                } => item !== null
+            );
+    }, [coaches, subscriptions]);
 
     return (
         <>
@@ -58,13 +97,14 @@ export default function SubscriptionsPage() {
                     {subscribedCoaches.length > 0 ? (
                         <FlatList
                             data={subscribedCoaches}
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item) => item.coach.id}
                             contentContainerStyle={styles.listContent}
                             renderItem={({ item }) => (
                                 <SubscriptionCard
-                                    coach={item}
+                                    coach={item.coach}
+                                    subscribedAt={item.subscribedAt}
                                     onUnsubscribe={() => {
-                                        setSelectedCoachToUnsubscribe(item);
+                                        setSelectedCoachToUnsubscribe(item.coach);
                                         setIsUnsubscribeModalVisible(true);
                                     }}
                                 />
@@ -113,9 +153,11 @@ export default function SubscriptionsPage() {
 
 function SubscriptionCard({
                               coach,
+                              subscribedAt,
                               onUnsubscribe,
                           }: Readonly<{
     coach: Coach;
+    subscribedAt: string;
     onUnsubscribe: () => void;
 }>) {
     return (
@@ -131,6 +173,11 @@ function SubscriptionCard({
 
                 <View style={styles.cardInfo}>
                     <Text style={styles.coachName}>{coach.name}</Text>
+
+                    <Text style={styles.renewalText}>
+                        Next renewal: {getNextRenewalDate(subscribedAt)}
+                    </Text>
+
                     <TouchableOpacity
                         style={styles.unsubscribeButton}
                         onPress={onUnsubscribe}
@@ -193,7 +240,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "700",
         color: "#111",
-        marginBottom: 8,
+        marginBottom: 6,
+    },
+    renewalText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: "#666",
+        marginBottom: 10,
     },
     unsubscribeButton: {
         backgroundColor: "#FF0000",
@@ -201,7 +254,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 20,
         alignSelf: "flex-start",
-        marginTop: 10,
+        marginTop: 2,
     },
     unsubscribeButtonText: {
         color: "#fff",

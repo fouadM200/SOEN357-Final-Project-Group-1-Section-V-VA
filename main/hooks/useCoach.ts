@@ -10,18 +10,23 @@ const coachImages: Record<string, ImageSourcePropType> = {
     "3": require("../assets/images/coaches/Amadou-Ba.png"),
 };
 
-const SUBSCRIBED_COACHES_STORAGE_KEY = "subscribedCoachIds";
+const SUBSCRIPTIONS_STORAGE_KEY = "coachSubscriptions";
 
-let subscribedCoachIds: string[] = [];
-let listeners: Array<(ids: string[]) => void> = [];
+export type CoachSubscription = {
+    coachId: string;
+    subscribedAt: string;
+};
+
+let subscriptions: CoachSubscription[] = [];
+let listeners: Array<(items: CoachSubscription[]) => void> = [];
 let hasHydratedSubscriptions = false;
 let hydrationPromise: Promise<void> | null = null;
 
 const notifyListeners = () => {
-    listeners.forEach((listener) => listener([...subscribedCoachIds]));
+    listeners.forEach((listener) => listener([...subscriptions]));
 };
 
-async function hydrateSubscribedCoachIds() {
+async function hydrateSubscriptions() {
     if (hasHydratedSubscriptions) {
         return;
     }
@@ -33,19 +38,21 @@ async function hydrateSubscribedCoachIds() {
 
     hydrationPromise = (async () => {
         try {
-            const storedIds = await AsyncStorage.getItem(
-                SUBSCRIBED_COACHES_STORAGE_KEY
+            const storedSubscriptions = await AsyncStorage.getItem(
+                SUBSCRIPTIONS_STORAGE_KEY
             );
 
-            if (storedIds) {
-                const parsedIds = JSON.parse(storedIds) as string[];
+            if (storedSubscriptions) {
+                const parsedSubscriptions = JSON.parse(
+                    storedSubscriptions
+                ) as CoachSubscription[];
 
-                if (Array.isArray(parsedIds)) {
-                    subscribedCoachIds = parsedIds;
+                if (Array.isArray(parsedSubscriptions)) {
+                    subscriptions = parsedSubscriptions;
                 }
             }
         } catch (error) {
-            console.error("Failed to load subscribed coaches:", error);
+            console.error("Failed to load subscriptions:", error);
         } finally {
             hasHydratedSubscriptions = true;
             hydrationPromise = null;
@@ -56,28 +63,28 @@ async function hydrateSubscribedCoachIds() {
     await hydrationPromise;
 }
 
-async function persistSubscribedCoachIds() {
+async function persistSubscriptions() {
     try {
         await AsyncStorage.setItem(
-            SUBSCRIBED_COACHES_STORAGE_KEY,
-            JSON.stringify(subscribedCoachIds)
+            SUBSCRIPTIONS_STORAGE_KEY,
+            JSON.stringify(subscriptions)
         );
     } catch (error) {
-        console.error("Failed to save subscribed coaches:", error);
+        console.error("Failed to save subscriptions:", error);
     }
 }
 
-export function useSubscribedCoachIds() {
-    const [ids, setIds] = useState<string[]>(subscribedCoachIds);
+export function useSubscriptions() {
+    const [items, setItems] = useState<CoachSubscription[]>(subscriptions);
 
     useEffect(() => {
-        const listener = (newIds: string[]) => {
-            setIds(newIds);
+        const listener = (newItems: CoachSubscription[]) => {
+            setItems(newItems);
         };
 
         listeners.push(listener);
 
-        hydrateSubscribedCoachIds().catch((error) => {
+        hydrateSubscriptions().catch((error) => {
             console.error("Failed to hydrate subscriptions:", error);
         });
 
@@ -86,27 +93,46 @@ export function useSubscribedCoachIds() {
         };
     }, []);
 
-    return ids;
+    return items;
+}
+
+export function useSubscribedCoachIds() {
+    const items = useSubscriptions();
+
+    return useMemo(() => {
+        return items.map((item) => item.coachId);
+    }, [items]);
 }
 
 export async function subscribeToCoach(id: string) {
-    await hydrateSubscribedCoachIds();
+    await hydrateSubscriptions();
 
-    if (!subscribedCoachIds.includes(id)) {
-        subscribedCoachIds = [...subscribedCoachIds, id];
-        await persistSubscribedCoachIds();
+    const alreadySubscribed = subscriptions.some(
+        (subscription) => subscription.coachId === id
+    );
+
+    if (!alreadySubscribed) {
+        subscriptions = [
+            ...subscriptions,
+            {
+                coachId: id,
+                subscribedAt: new Date().toISOString(),
+            },
+        ];
+
+        await persistSubscriptions();
         notifyListeners();
     }
 }
 
 export async function unsubscribeFromCoach(id: string) {
-    await hydrateSubscribedCoachIds();
+    await hydrateSubscriptions();
 
-    subscribedCoachIds = subscribedCoachIds.filter(
-        (coachId) => coachId !== id
+    subscriptions = subscriptions.filter(
+        (subscription) => subscription.coachId !== id
     );
 
-    await persistSubscribedCoachIds();
+    await persistSubscriptions();
     notifyListeners();
 }
 
