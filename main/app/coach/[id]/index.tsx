@@ -32,77 +32,92 @@ export default function CoachProfile() {
 
     return (
         <>
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.heroSection}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.push("/(tabs)/coach")}>
-                        <Ionicons name="arrow-back" size={28} color="#fff" />
-                    </TouchableOpacity>
-                    {coach.image ? (
-                        <Image source={coach.image} style={styles.heroImage} />
-                    ) : (
-                        <View style={styles.heroImagePlaceholder}>
-                            <Ionicons name="person" size={90} color="#999" />
-                        </View>
-                    )}
+            <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+                <View style={styles.screen}>
+                    <View style={styles.heroSection}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => router.push("/(tabs)/coach")}
+                        >
+                            <Ionicons name="arrow-back" size={28} color="#fff" />
+                        </TouchableOpacity>
 
-                    <View style={styles.overlayBottom}>
-                        <Text style={styles.name}>{coach.name}</Text>
+                        {coach.image ? (
+                            <Image source={coach.image} style={styles.heroImage} />
+                        ) : (
+                            <View style={styles.heroImagePlaceholder}>
+                                <Ionicons name="person" size={90} color="#999" />
+                            </View>
+                        )}
 
-                        <View style={styles.ratingBadge}>
-                            <Ionicons name="star" size={16} color="#777" />
-                            <Text style={styles.ratingText}>{coach.rating}</Text>
+                        <View style={styles.overlayBottom}>
+                            <Text style={styles.name}>{coach.name}</Text>
+
+                            <View style={styles.ratingBadge}>
+                                <Ionicons name="star" size={16} color="#777" />
+                                <Text style={styles.ratingText}>{coach.rating}</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <View style={styles.content}>
-                    <Text style={styles.sectionTitle}>Biography</Text>
-                    <Text style={styles.bodyText}>{coach.biography}</Text>
-
-                    <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
-                        Written & Spoken{"\n"}Languages
-                    </Text>
-
-                    <View style={styles.languagesRow}>
-                        <View style={styles.languageList}>
-                            {coach.languages.map((language) => (
-                                <Text key={language} style={styles.languageItem}>
-                                    • {language}
-                                </Text>
-                            ))}
-                        </View>
-                        <View style={styles.verticalDivider} />
-                    </View>
-
-                    <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
-                        Subscription cost
-                    </Text>
-                    <Text style={styles.priceText}>${coach.price}/month</Text>
-
-                    <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
-                        Testimonials
-                    </Text>
-
-                    {coach.testimonials.map((testimonial, index) => (
-                        <View key={index} style={styles.testimonialCard}>
-                            <Text style={styles.testimonialName}>{testimonial.name}</Text>
-                            <Text style={styles.testimonialText}>
-                                “{testimonial.text}”
-                            </Text>
-                        </View>
-                    ))}
-
-                    <TouchableOpacity 
-                        style={styles.subscribeButton}
-                        onPress={() => router.push(`/coach/${coach.id}/subscribe`)}
+                    <ScrollView
+                        style={styles.scrollArea}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
                     >
-                        <Text style={styles.subscribeButtonText}>Subscribe</Text>
-                    </TouchableOpacity>
+                        <View style={styles.content}>
+                            <Text style={styles.sectionTitle}>Biography</Text>
+                            <Text style={styles.bodyText}>{coach.biography}</Text>
+
+                            <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
+                                Written & Spoken{"\n"}Languages
+                            </Text>
+
+                            <View style={styles.languagesRow}>
+                                <View style={styles.languageList}>
+                                    {coach.languages.map((language) => (
+                                        <Text key={language} style={styles.languageItem}>
+                                            • {language}
+                                        </Text>
+                                    ))}
+                                </View>
+                            </View>
+
+                            <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
+                                Subscription cost
+                            </Text>
+                            <Text style={styles.priceText}>${coach.price}/month</Text>
+
+                            <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
+                                Testimonials
+                            </Text>
+
+                            {coach.testimonials.map((testimonial) => (
+                                <View
+                                    key={`${testimonial.name}-${testimonial.text}`}
+                                    style={styles.testimonialCard}
+                                >
+                                    <Text style={styles.testimonialName}>
+                                        {testimonial.name}
+                                    </Text>
+                                    <Text style={styles.testimonialText}>
+                                        “{testimonial.text}”
+                                    </Text>
+                                </View>
+                            ))}
+
+                            <TouchableOpacity
+                                style={styles.subscribeButton}
+                                onPress={() => router.push(`/coach/${coach.id}/subscribe`)}
+                            >
+                                <Text style={styles.subscribeButtonText}>Subscribe</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
                 </View>
-            </ScrollView>
-        </SafeAreaView>
-        <CustomBottomNavigation />
+            </SafeAreaView>
+
+            <CustomBottomNavigation />
         </>
     );
 }
@@ -111,6 +126,9 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: "#F5F5F5",
+    },
+    screen: {
+        flex: 1,
     },
     notFoundContainer: {
         flex: 1,
@@ -126,13 +144,14 @@ const styles = StyleSheet.create({
         position: "relative",
         height: 400,
         backgroundColor: "#D9D9D9",
+        flexShrink: 0,
     },
     backButton: {
         position: "absolute",
         top: 18,
         left: 18,
         zIndex: 2,
-        paddingTop: 40
+        paddingTop: 40,
     },
     heroImage: {
         width: "100%",
@@ -175,6 +194,13 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#666",
     },
+    scrollArea: {
+        flex: 1,
+        backgroundColor: "#F5F5F5",
+    },
+    scrollContent: {
+        paddingBottom: 30,
+    },
     content: {
         paddingHorizontal: 18,
         paddingTop: 20,
@@ -208,12 +234,6 @@ const styles = StyleSheet.create({
         color: "#666",
         fontWeight: "600",
         marginBottom: 6,
-    },
-    verticalDivider: {
-        width: 1,
-        height: 28,
-        backgroundColor: "#555",
-        marginTop: 6,
     },
     priceText: {
         fontSize: 18,
