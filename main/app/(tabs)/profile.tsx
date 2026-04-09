@@ -60,7 +60,7 @@ function formatHeightWithConversion(height: string) {
 
     if (unit === "cm") {
         const ft = convertCmToFt(value);
-        return `${value} cm / ${ft.toFixed(2)} ft`;
+        return `${value} cm / ${ft.toFixed(3)} ft`;
     }
 
     if (unit === "ft") {
@@ -69,6 +69,60 @@ function formatHeightWithConversion(height: string) {
     }
 
     return height;
+}
+
+function formatDateOfBirth(dateString: string) {
+    const parts = dateString.split("-");
+
+    if (parts.length !== 3) {
+        return dateString;
+    }
+
+    const year = Number(parts[0]);
+    const monthIndex = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+
+    if (
+        Number.isNaN(year) ||
+        Number.isNaN(monthIndex) ||
+        Number.isNaN(day)
+    ) {
+        return dateString;
+    }
+
+    const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+
+    const getDaySuffix = (dayNumber: number) => {
+        if (dayNumber >= 11 && dayNumber <= 13) {
+            return "th";
+        }
+
+        switch (dayNumber % 10) {
+            case 1:
+                return "st";
+            case 2:
+                return "nd";
+            case 3:
+                return "rd";
+            default:
+                return "th";
+        }
+    };
+
+    return `${months[monthIndex]} ${day}${getDaySuffix(day)}, ${year}`;
 }
 
 export default function ProfilePage() {
@@ -153,7 +207,10 @@ export default function ProfilePage() {
                     <View style={styles.blueDivider} />
 
                     <View style={styles.infoSection}>
-                        <InfoRow label="Date of Birth:" value={user.dateOfBirth} />
+                        <InfoRow
+                            label="Date of Birth:"
+                            value={formatDateOfBirth(user.dateOfBirth)}
+                        />
                         <InfoRow
                             label="Height:"
                             value={formatHeightWithConversion(user.height)}
@@ -245,20 +302,28 @@ const styles = StyleSheet.create({
     infoSection: {
         width: "100%",
         marginBottom: 34,
+        paddingHorizontal: 4,
     },
     infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
         marginBottom: 16,
     },
     label: {
+        width: 150,
         fontSize: 16,
         fontWeight: "800",
         color: "#111",
-        marginBottom: 4,
+        textAlign: "right",
+        marginRight: 18,
     },
     value: {
+        flex: 1,
         fontSize: 16,
-        fontWeight: "500",
-        color: "#333",
+        fontWeight: "600",
+        color: "#7A7A7A",
+        textAlign: "left",
     },
     logoutButton: {
         width: "100%",
