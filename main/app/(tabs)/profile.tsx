@@ -15,6 +15,62 @@ import PageHeaderBanner from "@/components/PageHeaderBanner";
 import { getCurrentUser, logoutUser, User } from "@/utils/authStorage";
 import type { InfoRowProps } from "@/types/profile";
 
+function convertLbToKg(lb: number) {
+    return lb * 0.45359237;
+}
+
+function convertKgToLb(kg: number) {
+    return kg * 2.20462262;
+}
+
+function convertCmToFt(cm: number) {
+    return cm / 30.48;
+}
+
+function convertFtToCm(ft: number) {
+    return ft * 30.48;
+}
+
+function formatWeightWithConversion(weight: string) {
+    const parts = weight.trim().split(" ");
+    const value = Number.parseFloat(parts[0]);
+    const unit = parts[1]?.toLowerCase();
+
+    if (Number.isNaN(value) || !unit) return weight;
+
+    if (unit === "kg") {
+        const lb = convertKgToLb(value);
+        return `${value} kg / ${lb.toFixed(2)} lb`;
+    }
+
+    if (unit === "lb") {
+        const kg = convertLbToKg(value);
+        return `${value} lb / ${kg.toFixed(2)} kg`;
+    }
+
+    return weight;
+}
+
+function formatHeightWithConversion(height: string) {
+    const parts = height.trim().split(" ");
+    const value = Number.parseFloat(parts[0]);
+    const unit = parts[1]?.toLowerCase();
+
+    if (Number.isNaN(value) || !unit) return height;
+
+    if (unit === "cm") {
+        const ft = convertCmToFt(value);
+        return `${value} cm / ${ft.toFixed(2)} ft`;
+    }
+
+    if (unit === "ft") {
+        const cm = convertFtToCm(value);
+        return `${value} ft / ${cm.toFixed(0)} cm`;
+    }
+
+    return height;
+}
+
 export default function ProfilePage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
@@ -32,6 +88,7 @@ export default function ProfilePage() {
 
                 setUser(currentUser);
             } catch (error) {
+                console.error("Failed to load profile:", error);
                 Alert.alert("Error", "Failed to load profile.");
             } finally {
                 setLoading(false);
@@ -39,13 +96,14 @@ export default function ProfilePage() {
         };
 
         loadUser();
-    }, []);
+    }, [router]);
 
     const handleLogout = async () => {
         try {
             await logoutUser();
             router.replace("/login");
         } catch (error) {
+            console.error("Failed to log out:", error);
             Alert.alert("Error", "Failed to log out.");
         }
     };
@@ -92,12 +150,18 @@ export default function ProfilePage() {
                         </Text>
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={styles.blueDivider} />
 
                     <View style={styles.infoSection}>
                         <InfoRow label="Date of Birth:" value={user.dateOfBirth} />
-                        <InfoRow label="Height:" value={user.height} />
-                        <InfoRow label="Weight:" value={user.weight} />
+                        <InfoRow
+                            label="Height:"
+                            value={formatHeightWithConversion(user.height)}
+                        />
+                        <InfoRow
+                            label="Weight:"
+                            value={formatWeightWithConversion(user.weight)}
+                        />
                         <InfoRow label="Phone Number:" value={user.phoneNumber} />
                         <InfoRow label="Email:" value={user.email} />
                     </View>
@@ -146,33 +210,36 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     profileRow: {
+        width: "100%",
+        flexDirection: "row",
         alignItems: "center",
-        marginBottom: 24,
+        justifyContent: "flex-start",
+        marginBottom: 20,
     },
     avatar: {
         width: 84,
         height: 84,
         borderRadius: 42,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#000000",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 12,
+        marginRight: 16,
     },
     avatarText: {
         fontSize: 32,
         fontWeight: "800",
-        color: "#1EA7FF",
+        color: "#FFFFFF",
     },
     name: {
         fontSize: 26,
         fontWeight: "800",
         color: "#000",
-        textAlign: "center",
+        flexShrink: 1,
     },
-    divider: {
+    blueDivider: {
         width: "100%",
-        height: 2,
-        backgroundColor: "#CFCFCF",
+        height: 4,
+        backgroundColor: "#1EA7FF",
         marginBottom: 22,
     },
     infoSection: {
