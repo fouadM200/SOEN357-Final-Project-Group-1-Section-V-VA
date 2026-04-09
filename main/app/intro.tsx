@@ -1,8 +1,17 @@
+import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 
 export default function IntroPage() {
     const router = useRouter();
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.replace("/login");
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, [router]);
 
     return (
         <View style={styles.container}>
@@ -11,22 +20,6 @@ export default function IntroPage() {
                 style={styles.logo}
                 resizeMode="contain"
             />
-
-            <View style={styles.buttonContainer}>
-                <Pressable
-                    style={styles.loginButton}
-                    onPress={() => router.push("/login")}
-                >
-                    <Text style={styles.loginButtonText}>Login</Text>
-                </Pressable>
-
-                <Pressable
-                    style={styles.signupButton}
-                    onPress={() => router.push("/signup")}
-                >
-                    <Text style={styles.signupButtonText}>Sign up</Text>
-                </Pressable>
-            </View>
         </View>
     );
 }
@@ -42,35 +35,5 @@ const styles = StyleSheet.create({
     logo: {
         width: 260,
         height: 260,
-        marginBottom: 50,
-    },
-    buttonContainer: {
-        width: "100%",
-        alignItems: "center",
-        gap: 14,
-    },
-    loginButton: {
-        width: "80%",
-        backgroundColor: "#FFFFFF",
-        paddingVertical: 14,
-        borderRadius: 28,
-        alignItems: "center",
-    },
-    loginButtonText: {
-        color: "#26A7F7",
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    signupButton: {
-        width: "80%",
-        backgroundColor: "#000000",
-        paddingVertical: 14,
-        borderRadius: 28,
-        alignItems: "center",
-    },
-    signupButtonText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "700",
     },
 });

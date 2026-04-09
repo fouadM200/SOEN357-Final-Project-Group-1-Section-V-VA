@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
     Alert,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,7 +10,6 @@ import {
     View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import FitFuelLogoBlue from "../components/FitFuelLogoBlue";
 import { signupUser } from "@/utils/authStorage";
 import SuccessCard from "../components/SuccessCard";
 
@@ -26,10 +26,8 @@ export default function SignupPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showSuccessCard, setShowSuccessCard] = useState(false);
-
     const [heightUnit, setHeightUnit] = useState("ft");
     const [weightUnit, setWeightUnit] = useState("lb");
-
     const [showHeightDropdown, setShowHeightDropdown] = useState(false);
     const [showWeightDropdown, setShowWeightDropdown] = useState(false);
 
@@ -79,7 +77,11 @@ export default function SignupPage() {
                 contentContainerStyle={styles.container}
                 keyboardShouldPersistTaps="handled"
             >
-                <FitFuelLogoBlue width={300} height={300} />
+                <Image
+                    source={require("../assets/images/fitfuel-logo-blue.png")}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
 
                 <Text style={styles.title}>Sign up</Text>
 
@@ -268,7 +270,7 @@ export default function SignupPage() {
 
                 <TouchableOpacity
                     style={styles.cancelButton}
-                    onPress={() => router.push("/intro")}
+                    onPress={() => router.push("/login")}
                 >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
@@ -289,6 +291,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         paddingTop: 60,
         paddingBottom: 40,
+    },
+    logo: {
+        width: 300,
+        height: 300,
+        alignSelf: "center",
     },
     title: {
         fontSize: 30,
@@ -405,4 +412,4 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#000",
     },
-});
+})
