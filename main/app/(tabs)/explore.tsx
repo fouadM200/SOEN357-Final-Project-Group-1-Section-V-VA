@@ -3,15 +3,14 @@ import {
     View,
     Text,
     StyleSheet,
-    TextInput,
     TouchableOpacity,
     ScrollView,
     Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import SearchBar from "../../components/SearchBar";
 
 export default function ExerciseScreen() {
     const router = useRouter();
@@ -52,18 +51,10 @@ export default function ExerciseScreen() {
 
                 <View style={styles.content}>
                     <View style={styles.searchContainer}>
-                        <Ionicons
-                            name="search"
-                            size={20}
-                            color="#999"
-                            style={styles.searchIcon}
-                        />
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search for an exercise"
-                            placeholderTextColor="#999"
+                        <SearchBar
                             value={searchQuery}
                             onChangeText={setSearchQuery}
+                            placeholder="Search for an exercise"
                         />
                     </View>
 
@@ -148,20 +139,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     searchContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f2f2f2",
-        borderRadius: 10,
-        paddingHorizontal: 10,
         marginBottom: 20,
-    },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
-        height: 40,
-        fontSize: 16,
     },
     tabContainer: {
         flexDirection: "row",

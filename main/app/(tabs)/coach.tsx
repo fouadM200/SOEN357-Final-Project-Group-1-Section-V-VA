@@ -4,18 +4,16 @@ import {
     Image,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import {
-    useCoaches,
-} from "../../hooks/useCoach";
+import { useCoaches } from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import SearchBar from "../../components/SearchBar";
 
 export default function CoachPage() {
     const [searchText, setSearchText] = useState("");
@@ -74,21 +72,17 @@ export default function CoachPage() {
                         },
                         {
                             label: "Subscriptions",
-                            onPress: () =>
-                                router.push("/coach/subscriptions"),
+                            onPress: () => router.push("/coach/subscriptions"),
                             active: false,
                         },
                     ]}
                 />
 
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color="#999" />
-                    <TextInput
-                        placeholder="Search for an online fitness coach"
-                        placeholderTextColor="#999"
-                        style={styles.searchInput}
+                    <SearchBar
                         value={searchText}
                         onChangeText={setSearchText}
+                        placeholder="Search for an online fitness coach"
                     />
                 </View>
 
@@ -197,7 +191,6 @@ function CoachCard({ coach }: { coach: Coach }) {
     );
 }
 
-
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
@@ -214,18 +207,6 @@ const styles = StyleSheet.create({
     searchContainer: {
         marginTop: 14,
         marginHorizontal: 16,
-        backgroundColor: "#ECECEC",
-        borderRadius: 18,
-        height: 44,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 12,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 8,
-        fontSize: 15,
-        color: "#111",
     },
     filtersRow: {
         flexDirection: "row",
