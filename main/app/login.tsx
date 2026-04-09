@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
     Alert,
+    Image,
     StyleSheet,
     Text,
     TextInput,
@@ -9,7 +10,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import FitFuelLogoBlue from "../components/FitFuelLogoBlue";
 import { loginUser } from "@/utils/authStorage";
 
 export default function LoginPage() {
@@ -36,7 +36,11 @@ export default function LoginPage() {
     return (
         <View style={styles.container}>
             <View style={styles.logoContainer}>
-                <FitFuelLogoBlue width={300} height={300} opacity={0.25} />
+                <Image
+                    source={require("../assets/images/fitfuel-logo-blue.png")}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
             </View>
 
             <Text style={styles.title}>Login</Text>
@@ -90,7 +94,11 @@ const styles = StyleSheet.create({
         paddingTop: 80,
     },
     logoContainer: {
-        alignItems: "center"
+        alignItems: "center",
+    },
+    logo: {
+        width: 300,
+        height: 300,
     },
     title: {
         fontSize: 36,

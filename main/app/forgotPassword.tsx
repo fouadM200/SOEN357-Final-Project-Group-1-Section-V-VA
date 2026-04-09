@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
     Alert,
+    Image,
     StyleSheet,
     Text,
     TextInput,
@@ -10,7 +11,6 @@ import {
 import { useRouter } from "expo-router";
 import { resetPassword } from "@/utils/authStorage";
 import SuccessCard from "../components/SuccessCard";
-import FitFuelLogoBlue from "@/components/FitFuelLogoBlue";
 
 export default function ForgotPasswordPage() {
     const router = useRouter();
@@ -43,7 +43,12 @@ export default function ForgotPasswordPage() {
 
     return (
         <View style={styles.container}>
-            <FitFuelLogoBlue width={250} height={250} />
+            <Image
+                source={require("../assets/images/fitfuel-logo-blue.png")}
+                style={styles.logo}
+                resizeMode="contain"
+            />
+
             <Text style={styles.title}>Forgot Password</Text>
 
             <Text style={styles.label}>Email</Text>
@@ -81,7 +86,10 @@ export default function ForgotPasswordPage() {
                 <Text style={styles.resetButtonText}>Reset Password</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.cancelButton} onPress={() => router.push("/login")}>
+            <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => router.replace("/login")}
+            >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
 
@@ -100,6 +108,11 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
         paddingHorizontal: 30,
         paddingTop: 90,
+    },
+    logo: {
+        width: 250,
+        height: 250,
+        alignSelf: "center",
     },
     title: {
         fontSize: 32,
