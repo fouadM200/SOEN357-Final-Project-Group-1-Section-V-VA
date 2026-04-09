@@ -1,13 +1,27 @@
-import React from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import type { SubscriptionSuccessModalProps } from "@/types/subscriptionSuccessModal";
 import Ionicons from "@expo/vector-icons/Ionicons";
+
+function generateTransactionId() {
+    const prefix = "1230000";
+    const randomPart = Math.floor(100000000 + Math.random() * 900000000).toString();
+    return `${prefix}${randomPart}`;
+}
 
 export default function SubscriptionSuccessModal({
                                                      visible,
                                                      onGoBack,
                                                      coach,
                                                  }: Readonly<SubscriptionSuccessModalProps>) {
+    const [transactionId, setTransactionId] = useState(generateTransactionId());
+
+    useEffect(() => {
+        if (visible) {
+            setTransactionId(generateTransactionId());
+        }
+    }, [visible]);
+
     return (
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.modalOverlay}>
@@ -15,16 +29,23 @@ export default function SubscriptionSuccessModal({
                     <View style={styles.checkmarkCircle}>
                         <Ionicons name="checkmark" size={60} color="#1DA1F2" />
                     </View>
+
                     <Text style={styles.successTitle}>Payment Successful!</Text>
+
                     <Text style={styles.successSubtitle}>
                         You’re now subscribed to the online coaching program of:
                     </Text>
+
                     <Text style={styles.coachNameText}>{coach.name}</Text>
 
-                    <Text style={styles.transactionText}>Transaction ID: 123000048237684370</Text>
+                    <Text style={styles.transactionText}>
+                        Transaction ID: {transactionId}
+                    </Text>
 
                     <TouchableOpacity style={styles.goBackButton} onPress={onGoBack}>
-                        <Text style={styles.goBackButtonText}>Go Back to Online Coaching</Text>
+                        <Text style={styles.goBackButtonText}>
+                            Go Back to Online Coaching
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -35,13 +56,13 @@ export default function SubscriptionSuccessModal({
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.1)", // Lighter overlay as seen in screenshot
+        backgroundColor: "rgba(0,0,0,0.1)",
         justifyContent: "center",
         alignItems: "center",
         padding: 24,
     },
     successCard: {
-        backgroundColor: "#EEEEEE", // Slightly grey card background
+        backgroundColor: "#EEEEEE",
         width: "100%",
         borderRadius: 24,
         paddingHorizontal: 24,
@@ -91,7 +112,7 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     goBackButton: {
-        backgroundColor: "#222", // Dark button
+        backgroundColor: "#222",
         width: "100%",
         height: 52,
         borderRadius: 26,
