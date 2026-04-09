@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Image,
+    ImageBackground,
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
@@ -18,6 +18,56 @@ import {
     saveConversation,
     saveMessages,
 } from "../../utils/messageStorage";
+import MessageBubble from "@/components/MessageBubble";
+import MessageDateChip from "@/components/MessageDateChip";
+import MessageInputBar from "@/components/MessageInputBar";
+
+function formatConversationDate(dateInput: string | Date) {
+    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+    const month = date.toLocaleDateString("en-US", { month: "short" });
+    const day = date.getDate();
+    const year = date.getFullYear();
+
+    return `${weekday}, ${month} ${day}, ${year}`;
+}
+
+function formatMessageTime(dateInput: string | Date) {
+    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date
+        .toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+        .toLowerCase();
+}
+
+function isSameCalendarDay(firstDateInput: string | Date, secondDateInput: string | Date) {
+    const firstDate =
+        typeof firstDateInput === "string" ? new Date(firstDateInput) : firstDateInput;
+    const secondDate =
+        typeof secondDateInput === "string" ? new Date(secondDateInput) : secondDateInput;
+
+    if (Number.isNaN(firstDate.getTime()) || Number.isNaN(secondDate.getTime())) {
+        return false;
+    }
+
+    return (
+        firstDate.getFullYear() === secondDate.getFullYear() &&
+        firstDate.getMonth() === secondDate.getMonth() &&
+        firstDate.getDate() === secondDate.getDate()
+    );
+}
 
 export default function CoachChatPage() {
     const router = useRouter();
@@ -29,9 +79,20 @@ export default function CoachChatPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    const scrollToBottom = (animated = true) => {
+        requestAnimationFrame(() => {
+            scrollViewRef.current?.scrollToEnd({ animated });
+        });
+    };
+
     useEffect(() => {
         const loadStoredMessages = async () => {
-            if (!coach) return;
+            if (!coach) {
+                setIsLoadingMessages(false);
+                return;
+            }
 
             setIsLoadingMessages(true);
 
@@ -44,20 +105,20 @@ export default function CoachChatPage() {
             }
 
             setIsLoadingMessages(false);
+
+            setTimeout(() => {
+                scrollToBottom(false);
+            }, 50);
         };
 
         loadStoredMessages();
     }, [coach]);
 
-    if (!coach) {
-        return (
-            <SafeAreaView style={styles.safeArea} edges={["top"]}>
-                <View style={styles.notFoundContainer}>
-                    <Text style={styles.notFoundText}>Conversation not found.</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
+    useEffect(() => {
+        if (!isLoadingMessages) {
+            scrollToBottom(true);
+        }
+    }, [messages, isLoadingMessages]);
 
     const wait = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,7 +126,9 @@ export default function CoachChatPage() {
     const handleSend = async () => {
         const trimmed = input.trim();
 
-        if (!trimmed || isGenerating) return;
+        if (!trimmed || isGenerating || !coach) {
+            return;
+        }
 
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
@@ -82,6 +145,8 @@ export default function CoachChatPage() {
 
         await saveMessages(coach.id, updatedMessages);
         await saveConversation(coach.id, userMessage.text);
+
+        scrollToBottom(true);
 
         try {
             const apiBaseUrl =
@@ -118,6 +183,8 @@ export default function CoachChatPage() {
             setMessages(finalMessages);
             await saveMessages(coach.id, finalMessages);
             await saveConversation(coach.id, coachReply.text);
+
+            scrollToBottom(true);
         } catch (error) {
             console.log("Frontend fetch error:", error);
 
@@ -135,10 +202,62 @@ export default function CoachChatPage() {
             setMessages(finalMessages);
             await saveMessages(coach.id, finalMessages);
             await saveConversation(coach.id, fallbackReply.text);
+
+            scrollToBottom(true);
         } finally {
             setIsGenerating(false);
         }
     };
+
+    const renderedMessages = useMemo(() => {
+        return messages.map((message, index) => {
+            const previousMessage = index > 0 ? messages[index - 1] : null;
+            const shouldShowDateTag =
+                !previousMessage ||
+                !isSameCalendarDay(previousMessage.timestamp, message.timestamp);
+
+            return (
+                <View key={message.id}>
+                    {shouldShowDateTag ? (
+                        <MessageDateChip
+                            label={formatConversationDate(message.timestamp)}
+                        />
+                    ) : null}
+
+                    <MessageBubble
+                        message={message}
+                        formattedTime={formatMessageTime(message.timestamp)}
+                    />
+                </View>
+            );
+        });
+    }, [messages]);
+
+    let messagesContent: React.ReactNode;
+
+    if (isLoadingMessages) {
+        messagesContent = (
+            <Text style={styles.emptyChatText}>Loading messages...</Text>
+        );
+    } else if (messages.length === 0) {
+        messagesContent = (
+            <Text style={styles.emptyChatText}>
+                No messages yet. Start the conversation.
+            </Text>
+        );
+    } else {
+        messagesContent = renderedMessages;
+    }
+
+    if (!coach) {
+        return (
+            <SafeAreaView style={styles.safeArea} edges={["top"]}>
+                <View style={styles.notFoundContainer}>
+                    <Text style={styles.notFoundText}>Conversation not found.</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -165,67 +284,33 @@ export default function CoachChatPage() {
                     </View>
                 </View>
 
-                <ScrollView
-                    contentContainerStyle={styles.messagesContainer}
-                    showsVerticalScrollIndicator={false}
+                <ImageBackground
+                    source={require("../../assets/images/wallpaper.jpg")}
+                    style={styles.chatBackground}
+                    imageStyle={styles.chatBackgroundImage}
+                    resizeMode="cover"
                 >
-                    <View style={styles.dateChip}>
-                        <Text style={styles.dateChipText}>Conversation</Text>
-                    </View>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        contentContainerStyle={styles.messagesContainer}
+                        showsVerticalScrollIndicator={false}
+                        onContentSizeChange={() => scrollToBottom(true)}
+                    >
+                        {messagesContent}
 
-                    {isLoadingMessages ? (
-                        <Text style={styles.emptyChatText}>Loading messages...</Text>
-                    ) : messages.length === 0 ? (
-                        <Text style={styles.emptyChatText}>
-                            No messages yet. Start the conversation.
-                        </Text>
-                    ) : (
-                        messages.map((message) => (
-                            <View
-                                key={message.id}
-                                style={[
-                                    styles.messageBubble,
-                                    message.sender === "coach"
-                                        ? styles.coachBubble
-                                        : styles.userBubble,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.messageText,
-                                        message.sender === "user" && styles.userMessageText,
-                                    ]}
-                                >
-                                    {message.text}
-                                </Text>
+                        {isGenerating ? (
+                            <View style={styles.typingBubble}>
+                                <Text style={styles.typingText}>Typing...</Text>
                             </View>
-                        ))
-                    )}
+                        ) : null}
+                    </ScrollView>
+                </ImageBackground>
 
-                    {isGenerating && (
-                        <View style={[styles.messageBubble, styles.coachBubble]}>
-                            <Text style={styles.messageText}>Typing...</Text>
-                        </View>
-                    )}
-                </ScrollView>
-
-                <View style={styles.inputBar}>
-                    <TouchableOpacity>
-                        <Ionicons name="add" size={22} color="#999" />
-                    </TouchableOpacity>
-
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Type your message here..."
-                        placeholderTextColor="#999"
-                        value={input}
-                        onChangeText={setInput}
-                    />
-
-                    <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                        <Ionicons name="send" size={16} color="#fff" />
-                    </TouchableOpacity>
-                </View>
+                <MessageInputBar
+                    value={input}
+                    onChangeText={setInput}
+                    onSend={handleSend}
+                />
             </View>
         </SafeAreaView>
     );
@@ -290,79 +375,37 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 14,
     },
+    chatBackground: {
+        flex: 1,
+    },
+    chatBackgroundImage: {
+        opacity: 0.8,
+    },
     messagesContainer: {
         padding: 16,
         paddingBottom: 24,
-    },
-    dateChip: {
-        alignSelf: "center",
-        backgroundColor: "#E7E7E7",
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderRadius: 20,
-        marginBottom: 16,
-    },
-    dateChipText: {
-        color: "#666",
-        fontSize: 12,
-        fontWeight: "600",
+        flexGrow: 1,
     },
     emptyChatText: {
         textAlign: "center",
-        color: "#777",
+        color: "#555",
         fontSize: 14,
         marginTop: 20,
     },
-    messageBubble: {
-        maxWidth: "78%",
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 16,
-        marginBottom: 10,
-    },
-    coachBubble: {
+    typingBubble: {
         alignSelf: "flex-start",
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E5E5E5",
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 10,
+        maxWidth: "78%",
     },
-    userBubble: {
-        alignSelf: "flex-end",
-        backgroundColor: "#1DA1F2",
-    },
-    messageText: {
+    typingText: {
         fontSize: 14,
         color: "#111",
         lineHeight: 20,
-    },
-    userMessageText: {
-        color: "#fff",
-    },
-    inputBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5E5",
-        backgroundColor: "#fff",
-        gap: 10,
-    },
-    input: {
-        flex: 1,
-        backgroundColor: "#F1F1F1",
-        borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        fontSize: 14,
-        color: "#111",
-    },
-    sendButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: "#1DA1F2",
-        alignItems: "center",
-        justifyContent: "center",
     },
 });
