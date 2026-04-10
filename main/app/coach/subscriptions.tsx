@@ -12,7 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import {
     useCoaches,
-    useSubscribedCoachIds,
+    useSubscribedCoaches,
     unsubscribeFromCoach,
 } from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
@@ -21,17 +21,58 @@ import CustomBottomNavigation from "../../components/CustomBottomNavigation";
 import UnsubscribeModal from "@/components/modals/UnsubscribeModal";
 import UnsubscribeSuccessModal from "@/components/modals/UnsubscribeSuccessModal";
 
+function formatRenewalDate(subscribedAt: string) {
+    const firstSubscriptionDate = new Date(subscribedAt);
+
+    if (Number.isNaN(firstSubscriptionDate.getTime())) {
+        return "";
+    }
+
+    const nextRenewalDate = new Date(firstSubscriptionDate);
+    const today = new Date();
+
+    while (nextRenewalDate <= today) {
+        nextRenewalDate.setMonth(nextRenewalDate.getMonth() + 1);
+    }
+
+    return nextRenewalDate.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
 export default function SubscriptionsPage() {
     const [isUnsubscribeModalVisible, setIsUnsubscribeModalVisible] = useState(false);
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-    const [selectedCoachToUnsubscribe, setSelectedCoachToUnsubscribe] = useState<Coach | null>(null);
+    const [selectedCoachToUnsubscribe, setSelectedCoachToUnsubscribe] =
+        useState<Coach | null>(null);
 
     const coaches = useCoaches();
-    const subscribedCoachIds = useSubscribedCoachIds();
+    const subscribedCoaches = useSubscribedCoaches();
 
-    const subscribedCoaches = useMemo(() => {
-        return coaches.filter((coach) => subscribedCoachIds.includes(coach.id));
-    }, [coaches, subscribedCoachIds]);
+    const subscribedCoachCards = useMemo(() => {
+        return subscribedCoaches
+            .map((subscription) => {
+                const coach = coaches.find(
+                    (coachItem) => coachItem.id === subscription.coachId
+                );
+
+                if (!coach) {
+                    return null;
+                }
+
+                return {
+                    coach,
+                    subscribedAt: subscription.subscribedAt,
+                };
+            })
+            .filter(
+                (
+                    item
+                ): item is { coach: Coach; subscribedAt: string } => item !== null
+            );
+    }, [coaches, subscribedCoaches]);
 
     return (
         <>
@@ -54,16 +95,17 @@ export default function SubscriptionsPage() {
                         }
                     />
 
-                    {subscribedCoaches.length > 0 ? (
+                    {subscribedCoachCards.length > 0 ? (
                         <FlatList
-                            data={subscribedCoaches}
-                            keyExtractor={(item) => item.id}
+                            data={subscribedCoachCards}
+                            keyExtractor={(item) => item.coach.id}
                             contentContainerStyle={styles.listContent}
                             renderItem={({ item }) => (
                                 <SubscriptionCard
-                                    coach={item}
+                                    coach={item.coach}
+                                    subscribedAt={item.subscribedAt}
                                     onUnsubscribe={() => {
-                                        setSelectedCoachToUnsubscribe(item);
+                                        setSelectedCoachToUnsubscribe(item.coach);
                                         setIsUnsubscribeModalVisible(true);
                                     }}
                                 />
@@ -86,9 +128,9 @@ export default function SubscriptionsPage() {
                         onCancel={() => {
                             setIsUnsubscribeModalVisible(false);
                         }}
-                        onUnsubscribe={() => {
+                        onUnsubscribe={async () => {
                             if (selectedCoachToUnsubscribe) {
-                                unsubscribeFromCoach(selectedCoachToUnsubscribe.id);
+                                await unsubscribeFromCoach(selectedCoachToUnsubscribe.id);
                             }
                             setIsUnsubscribeModalVisible(false);
                             setIsSuccessModalVisible(true);
@@ -112,11 +154,15 @@ export default function SubscriptionsPage() {
 
 function SubscriptionCard({
                               coach,
+                              subscribedAt,
                               onUnsubscribe,
                           }: {
     coach: Coach;
+    subscribedAt: string;
     onUnsubscribe: () => void;
 }) {
+    const nextRenewalDate = formatRenewalDate(subscribedAt);
+
     return (
         <View style={styles.card}>
             <View style={styles.cardTopRow}>
@@ -130,6 +176,11 @@ function SubscriptionCard({
 
                 <View style={styles.cardInfo}>
                     <Text style={styles.coachName}>{coach.name}</Text>
+
+                    <Text style={styles.renewalText}>
+                        Next renewal: {nextRenewalDate}
+                    </Text>
+
                     <TouchableOpacity
                         style={styles.unsubscribeButton}
                         onPress={onUnsubscribe}
@@ -192,7 +243,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "700",
         color: "#111",
-        marginBottom: 8,
+        marginBottom: 6,
+    },
+    renewalText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: "#666",
+        marginBottom: 10,
     },
     unsubscribeButton: {
         backgroundColor: "#FF0000",
@@ -200,7 +257,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 20,
         alignSelf: "flex-start",
-        marginTop: 10,
+        marginTop: 4,
     },
     unsubscribeButtonText: {
         color: "#fff",

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     FlatList,
     Image,
@@ -9,133 +9,207 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { router, Stack } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
-import CustomBottomNavigation from "../../components/CustomBottomNavigation";
-import { useCoaches, useSubscribedCoachIds } from "../../hooks/useCoach";
-import { ConversationEntry, getConversations } from "../../utils/messageStorage";
+import SearchBar from "../../components/SearchBar";
+import {
+    useCoaches,
+    useSubscribedCoachIds,
+} from "../../hooks/useCoach";
+import {
+    getAllConversations,
+    type SavedConversation,
+} from "../../utils/messageStorage";
+
+type ConversationListItem = {
+    coachId: string;
+    coachName: string;
+    coachImage?: any;
+    lastMessage: string;
+    updatedAt: string | null;
+};
+
+function formatConversationDate(dateInput: string | null) {
+    if (!dateInput) {
+        return "";
+    }
+
+    const date = new Date(dateInput);
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
 
 export default function MessagesPage() {
-    const router = useRouter();
     const coaches = useCoaches();
     const subscribedCoachIds = useSubscribedCoachIds();
 
-    const [savedConversations, setSavedConversations] = useState<ConversationEntry[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
 
-    useFocusEffect(
-        useCallback(() => {
-            const loadConversations = async () => {
-                const data = await getConversations();
-                setSavedConversations(data);
-            };
+    useEffect(() => {
+        const loadConversations = async () => {
+            const conversations = await getAllConversations();
+            setSavedConversations(conversations);
+        };
 
-            loadConversations();
-        }, [])
-    );
+        const unsubscribe = router.addListener?.("focus", loadConversations);
 
-    const conversationCoachIds = savedConversations.map((item) => item.coachId);
+        loadConversations();
 
-    const visibleCoachIds = Array.from(
-        new Set([...subscribedCoachIds, ...conversationCoachIds])
-    );
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
+    }, []);
 
-    const visibleCoaches = visibleCoachIds
-        .map((id) => coaches.find((coach) => coach.id === id))
-        .filter(Boolean);
+    const conversationItems = useMemo(() => {
+        const conversationMap = new Map<string, SavedConversation>();
+
+        savedConversations.forEach((conversation) => {
+            conversationMap.set(conversation.coachId, conversation);
+        });
+
+        const coachIdsToDisplay = Array.from(
+            new Set([
+                ...subscribedCoachIds,
+                ...savedConversations.map((conversation) => conversation.coachId),
+            ])
+        );
+
+        const items: ConversationListItem[] = coachIdsToDisplay
+            .map((coachId) => {
+                const coach = coaches.find((item) => item.id === coachId);
+
+                if (!coach) {
+                    return null;
+                }
+
+                const savedConversation = conversationMap.get(coachId);
+
+                return {
+                    coachId: coach.id,
+                    coachName: coach.name,
+                    coachImage: coach.image,
+                    lastMessage: savedConversation?.lastMessage ?? "Start a conversation",
+                    updatedAt: savedConversation?.updatedAt ?? null,
+                };
+            })
+            .filter((item): item is ConversationListItem => item !== null)
+            .sort((firstItem, secondItem) => {
+                const firstTime = firstItem.updatedAt
+                    ? new Date(firstItem.updatedAt).getTime()
+                    : 0;
+                const secondTime = secondItem.updatedAt
+                    ? new Date(secondItem.updatedAt).getTime()
+                    : 0;
+
+                return secondTime - firstTime;
+            });
+
+        const trimmedQuery = searchQuery.trim().toLowerCase();
+
+        if (!trimmedQuery) {
+            return items;
+        }
+
+        return items.filter((item) =>
+            item.coachName.toLowerCase().includes(trimmedQuery)
+        );
+    }, [savedConversations, subscribedCoachIds, coaches, searchQuery]);
 
     return (
         <>
-        <SafeAreaView style={styles.safeArea} edges={["top"]}>
-            <View style={styles.container}>
-                <PageHeaderBanner
-                    title="Messages"
-                    leftAccessory={
-                        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
-                            <Ionicons name="arrow-back" size={26} color="#fff" />
-                        </TouchableOpacity>
-                    }
-                    logo={
-                        <Image
-                            source={require("../../assets/images/fitfuel-logo.png")}
-                            style={styles.headerLogo}
-                            resizeMode="contain"
+            <Stack.Screen options={{ headerShown: false }} />
+
+            <SafeAreaView style={styles.safeArea} edges={["top"]}>
+                <View style={styles.container}>
+                    <PageHeaderBanner
+                        title="Messages"
+                        leftAccessory={
+                            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
+                                <Ionicons name="arrow-back" size={26} color="#fff" />
+                            </TouchableOpacity>
+                        }
+                        logo={
+                            <Image
+                                source={require("../../assets/images/fitfuel-logo.png")}
+                                style={styles.headerLogo}
+                                resizeMode="contain"
+                            />
+                        }
+                    />
+
+                    <View style={styles.searchContainer}>
+                        <SearchBar
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder="Search"
                         />
-                    }
-                />
-
-                <View style={styles.searchBar}>
-                    <Ionicons name="search" size={18} color="#999" />
-                    <Text style={styles.searchPlaceholder}>Search</Text>
-                </View>
-
-                {visibleCoaches.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No conversations yet.</Text>
                     </View>
-                ) : (
-                    <FlatList
-                        data={visibleCoaches}
-                        keyExtractor={(item) => item!.id}
-                        contentContainerStyle={styles.listContent}
-                        renderItem={({ item }) => {
-                            if (!item) return null;
 
-                            const isSubscribed = subscribedCoachIds.includes(item.id);
-                            const savedConversation = savedConversations.find(
-                                (conversation) => conversation.coachId === item.id
-                            );
-
-                            return (
+                    {conversationItems.length > 0 ? (
+                        <FlatList
+                            data={conversationItems}
+                            keyExtractor={(item) => item.coachId}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
+                            renderItem={({ item }) => (
                                 <TouchableOpacity
-                                    style={styles.messageCard}
-                                    onPress={() => router.push(`/messages/${item.id}`)}
+                                    style={styles.conversationCard}
+                                    activeOpacity={0.85}
+                                    onPress={() => router.push(`/messages/${item.coachId}`)}
                                 >
-                                    <View style={styles.avatarWrapper}>
-                                        {item.image ? (
-                                            <Image source={item.image} style={styles.avatar} />
+                                    <View style={styles.leftSection}>
+                                        {item.coachImage ? (
+                                            <Image source={item.coachImage} style={styles.avatar} />
                                         ) : (
                                             <View style={styles.avatarFallback}>
-                                                <Ionicons name="person" size={26} color="#999" />
+                                                <Ionicons name="person" size={20} color="#999" />
                                             </View>
                                         )}
-                                    </View>
 
-                                    <View style={styles.cardText}>
-                                        <View style={styles.nameRow}>
-                                            <Text style={styles.name}>{item.name}</Text>
-
-                                            {!isSubscribed && (
-                                                <View style={styles.unsubscribedBadge}>
-                                                    <Text style={styles.unsubscribedBadgeText}>
-                                                        Unsubscribed
-                                                    </Text>
-                                                </View>
-                                            )}
+                                        <View style={styles.textSection}>
+                                            <Text style={styles.coachName}>
+                                                {item.coachName}
+                                            </Text>
+                                            <Text
+                                                style={styles.lastMessage}
+                                                numberOfLines={1}
+                                            >
+                                                {item.lastMessage}
+                                            </Text>
                                         </View>
-
-                                        <Text style={styles.preview} numberOfLines={1}>
-                                            {savedConversation?.lastMessage ??
-                                                `Open your conversation with ${item.name}.`}
-                                        </Text>
                                     </View>
 
-                                    <Text style={styles.timeText}>
-                                        {savedConversation?.updatedAt
-                                            ? new Date(savedConversation.updatedAt).toLocaleDateString()
-                                            : "09:41"}
+                                    <Text style={styles.dateText}>
+                                        {formatConversationDate(item.updatedAt)}
                                     </Text>
                                 </TouchableOpacity>
-                            );
-                        }}
-                        ListFooterComponent={
-                            <Text style={styles.endText}>End of messages</Text>
-                        }
-                        showsVerticalScrollIndicator={false}
-                    />
-                )}
-            </View>
-        </SafeAreaView>
-        <CustomBottomNavigation />
+                            )}
+                            ListFooterComponent={
+                                <Text style={styles.footerText}>End of messages</Text>
+                            }
+                        />
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>
+                                {searchQuery.trim()
+                                    ? "No coach found for this search."
+                                    : "No messages yet."}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            </SafeAreaView>
         </>
     );
 }
@@ -153,42 +227,38 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
     },
-    searchBar: {
+    searchContainer: {
         marginHorizontal: 16,
-        marginTop: 12,
-        backgroundColor: "#ECECEC",
-        borderRadius: 14,
-        height: 40,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 12,
-        gap: 8,
-    },
-    searchPlaceholder: {
-        color: "#999",
-        fontSize: 14,
+        marginTop: 14,
+        marginBottom: 14,
     },
     listContent: {
-        padding: 16,
-        paddingBottom: 30,
+        paddingHorizontal: 16,
+        paddingBottom: 24,
     },
-    messageCard: {
-        backgroundColor: "#fff",
+    conversationCard: {
+        backgroundColor: "#F8F8F8",
         borderRadius: 14,
-        padding: 12,
-        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: "#E2E2E2",
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginBottom: 12,
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#E5E5E5",
+        justifyContent: "space-between",
     },
-    avatarWrapper: {
-        marginRight: 12,
+    leftSection: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+        marginRight: 10,
     },
     avatar: {
         width: 52,
         height: 52,
         borderRadius: 26,
+        marginRight: 12,
     },
     avatarFallback: {
         width: 52,
@@ -197,59 +267,43 @@ const styles = StyleSheet.create({
         backgroundColor: "#DDD",
         alignItems: "center",
         justifyContent: "center",
+        marginRight: 12,
     },
-    cardText: {
+    textSection: {
         flex: 1,
     },
-    nameRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 6,
-        marginBottom: 4,
-    },
-    name: {
-        fontSize: 16,
+    coachName: {
+        fontSize: 18,
         fontWeight: "700",
         color: "#111",
+        marginBottom: 4,
     },
-    unsubscribedBadge: {
-        backgroundColor: "#F2F2F2",
-        borderRadius: 10,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-    },
-    unsubscribedBadgeText: {
-        fontSize: 10,
-        fontWeight: "700",
-        color: "#666",
-    },
-    preview: {
+    lastMessage: {
         fontSize: 13,
-        color: "#777",
+        color: "#8A8A8A",
     },
-    timeText: {
+    dateText: {
         fontSize: 12,
-        color: "#999",
+        color: "#9A9A9A",
         marginLeft: 8,
     },
-    endText: {
+    footerText: {
         textAlign: "center",
-        color: "#666",
         fontSize: 13,
-        fontWeight: "600",
-        marginTop: 16,
+        color: "#777",
+        marginTop: 4,
     },
     emptyContainer: {
         flex: 1,
-        justifyContent: "center",
+        justifyContent: "flex-start",
         alignItems: "center",
+        paddingTop: 40,
         paddingHorizontal: 20,
     },
     emptyText: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#222",
+        color: "#666",
         textAlign: "center",
     },
 });

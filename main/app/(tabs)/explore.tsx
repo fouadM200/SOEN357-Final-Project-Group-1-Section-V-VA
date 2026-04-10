@@ -1,40 +1,59 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     View,
     Text,
     StyleSheet,
-    TextInput,
     TouchableOpacity,
     ScrollView,
     Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
+import SearchBar from "../../components/SearchBar";
+
+type ExploreTab = "Muscles" | "Exercise Type";
 
 export default function ExerciseScreen() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<"Muscles" | "Exercise Type">(
-        "Muscles"
-    );
+    const [activeTab, setActiveTab] = useState<ExploreTab>("Muscles");
     const [searchQuery, setSearchQuery] = useState("");
 
     const muscles = ["Legs", "Chest", "Back", "Arms", "Shoulders", "Abs"];
     const exerciseTypes = [
         "Machine",
-        "Cables",
-        "Free Weights",
+        "Dumbbell",
+        "Barbell",
+        "Cable",
+        "Bodyweight",
         "Smith Machine",
-        "Functional Exercises",
-        "Cardio",
     ];
 
-    const categories = activeTab === "Muscles" ? muscles : exerciseTypes;
+    const categories = useMemo(() => {
+        return activeTab === "Muscles" ? muscles : exerciseTypes;
+    }, [activeTab]);
 
-    const filteredCategories = categories.filter((category) =>
-        category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCategories = useMemo(() => {
+        const trimmedQuery = searchQuery.trim().toLowerCase();
+
+        if (!trimmedQuery) {
+            return categories;
+        }
+
+        return categories.filter((category) =>
+            category.toLowerCase().includes(trimmedQuery)
+        );
+    }, [categories, searchQuery]);
+
+    const handlePressCategory = (category: string) => {
+        router.push({
+            pathname: "/exercise",
+            params: {
+                category,
+                tab: activeTab,
+            },
+        });
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -51,21 +70,11 @@ export default function ExerciseScreen() {
                 />
 
                 <View style={styles.content}>
-                    <View style={styles.searchContainer}>
-                        <Ionicons
-                            name="search"
-                            size={20}
-                            color="#999"
-                            style={styles.searchIcon}
-                        />
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search for an exercise"
-                            placeholderTextColor="#999"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
-                    </View>
+                    <SearchBar
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder={`Search for an ${activeTab === "Muscles" ? "exercise" : "exercise type"}`}
+                    />
 
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
@@ -74,6 +83,7 @@ export default function ExerciseScreen() {
                                 activeTab === "Muscles" && styles.activeTabButton,
                             ]}
                             onPress={() => setActiveTab("Muscles")}
+                            activeOpacity={0.85}
                         >
                             <Text
                                 style={[
@@ -91,6 +101,7 @@ export default function ExerciseScreen() {
                                 activeTab === "Exercise Type" && styles.activeTabButton,
                             ]}
                             onPress={() => setActiveTab("Exercise Type")}
+                            activeOpacity={0.85}
                         >
                             <Text
                                 style={[
@@ -111,12 +122,8 @@ export default function ExerciseScreen() {
                             <TouchableOpacity
                                 key={category}
                                 style={styles.categoryButton}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/exercise",
-                                        params: { category: category.toLowerCase() },
-                                    })
-                                }
+                                onPress={() => handlePressCategory(category)}
+                                activeOpacity={0.85}
                             >
                                 <Text style={styles.categoryText}>{category}</Text>
                             </TouchableOpacity>
@@ -135,7 +142,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#F5F5F5",
     },
     headerLogo: {
         width: 120,
@@ -145,41 +152,26 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: 20,
-        backgroundColor: "#fff",
-    },
-    searchContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f2f2f2",
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        marginBottom: 20,
-    },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
-        height: 40,
-        fontSize: 16,
+        backgroundColor: "#F5F5F5",
     },
     tabContainer: {
         flexDirection: "row",
-        marginBottom: 20,
+        marginTop: 14,
+        marginBottom: 18,
         gap: 10,
     },
     tabButton: {
         flex: 1,
         paddingVertical: 10,
         borderRadius: 20,
-        backgroundColor: "#A0AEC0",
+        backgroundColor: "#E5E5E5",
         alignItems: "center",
     },
     activeTabButton: {
         backgroundColor: "#1EA7FF",
     },
     tabText: {
-        color: "#fff",
+        color: "#666",
         fontWeight: "600",
     },
     activeTabText: {
@@ -191,7 +183,7 @@ const styles = StyleSheet.create({
     categoryButton: {
         backgroundColor: "#1EA7FF",
         paddingVertical: 24,
-        borderRadius: 10,
+        borderRadius: 14,
         marginBottom: 10,
         alignItems: "center",
         shadowColor: "#000",
@@ -206,6 +198,6 @@ const styles = StyleSheet.create({
     categoryText: {
         color: "#fff",
         fontSize: 18,
-        fontWeight: "bold",
+        fontWeight: "700",
     },
 });

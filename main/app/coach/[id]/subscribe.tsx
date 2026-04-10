@@ -15,13 +15,27 @@ import { useState } from "react";
 import { useCoach, subscribeToCoach } from "@/hooks/useCoach";
 import SubscriptionSuccessModal from "@/components/modals/SubscriptionSuccessModal";
 
+function PaymentRow({
+                        label,
+                        value,
+                    }: Readonly<{ label: string; value: string }>) {
+    return (
+        <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>{label}</Text>
+            <Text numberOfLines={1} style={styles.paymentDotsText}>
+                ................................................................................................
+            </Text>
+            <Text style={styles.paymentValue}>{value}</Text>
+        </View>
+    );
+}
+
 export default function SubscribePage() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
     const coach = useCoach(id);
     const [isConfirmed, setIsConfirmed] = useState(false);
 
-    // Form states
     const [cardName, setCardName] = useState("");
     const [cardNumber, setCardNumber] = useState("");
     const [expiry, setExpiry] = useState("");
@@ -32,15 +46,26 @@ export default function SubscribePage() {
     const [country, setCountry] = useState("");
     const [zip, setZip] = useState("");
 
-    const handleConfirm = () => {
-        if (!cardName || !cardNumber || !expiry || !cvv || !street || !city || !state || !country || !zip) {
+    const handleConfirm = async () => {
+        if (
+            !cardName ||
+            !cardNumber ||
+            !expiry ||
+            !cvv ||
+            !street ||
+            !city ||
+            !state ||
+            !country ||
+            !zip
+        ) {
             Alert.alert("Error", "Please fill in all required fields.");
             return;
         }
 
         if (id) {
-            subscribeToCoach(id);
+            await subscribeToCoach(id);
         }
+
         setIsConfirmed(true);
     };
 
@@ -61,6 +86,7 @@ export default function SubscribePage() {
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={28} color="#000" />
                     </TouchableOpacity>
+
                     <Text style={styles.headerTitle}>Subscription payment</Text>
                 </View>
 
@@ -83,26 +109,34 @@ export default function SubscribePage() {
 
                     <View style={styles.paymentDetailsCard}>
                         <Text style={styles.cardTitle}>Payment Details</Text>
-                        <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Monthly Subscription..........................</Text>
-                            <Text style={styles.detailValue}>${coach.price.toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>GST (5%)......................................................</Text>
-                            <Text style={styles.detailValue}>${(coach.price * 0.05).toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>QST (9.975%).............................................</Text>
-                            <Text style={styles.detailValue}>${(coach.price * 0.09975).toFixed(2)}</Text>
-                        </View>
+
+                        <PaymentRow
+                            label="Monthly Subscription"
+                            value={`$${coach.price.toFixed(2)}`}
+                        />
+
+                        <PaymentRow
+                            label="GST (5%)"
+                            value={`$${(coach.price * 0.05).toFixed(2)}`}
+                        />
+
+                        <PaymentRow
+                            label="QST (9.975%)"
+                            value={`$${(coach.price * 0.09975).toFixed(2)}`}
+                        />
+
                         <View style={styles.divider} />
+
                         <View style={styles.detailRow}>
                             <Text style={styles.totalLabel}>Total Due Today</Text>
                             <Text style={styles.totalValue}>
                                 ${(coach.price * 1.14975).toFixed(2)}
                             </Text>
                         </View>
-                        <Text style={styles.noteText}>Note: All prices are in Canadian Dollar</Text>
+
+                        <Text style={styles.noteText}>
+                            Note: All prices are in Canadian Dollar
+                        </Text>
                     </View>
 
                     <View style={styles.blueDivider} />
@@ -129,7 +163,7 @@ export default function SubscribePage() {
                     />
 
                     <View style={styles.row}>
-                        <View style={{ flex: 1, marginRight: 10 }}>
+                        <View style={styles.halfInputLeft}>
                             <Text style={styles.inputLabel}>Card Expiry Date</Text>
                             <TextInput
                                 style={styles.input}
@@ -139,7 +173,8 @@ export default function SubscribePage() {
                                 onChangeText={setExpiry}
                             />
                         </View>
-                        <View style={{ flex: 1 }}>
+
+                        <View style={styles.halfInputRight}>
                             <Text style={styles.inputLabel}>CVV / CVC</Text>
                             <TextInput
                                 style={styles.input}
@@ -154,7 +189,9 @@ export default function SubscribePage() {
 
                     <View style={styles.blueDivider} />
 
-                    <Text style={styles.sectionTitle}>Please add your billing address info:</Text>
+                    <Text style={styles.sectionTitle}>
+                        Please add your billing address info:
+                    </Text>
 
                     <Text style={styles.inputLabel}>Street Address</Text>
                     <TextInput
@@ -166,7 +203,11 @@ export default function SubscribePage() {
                     />
 
                     <Text style={styles.inputLabel}>Address Line 2</Text>
-                    <TextInput style={styles.input} placeholder="Apt., suite, etc." placeholderTextColor="#ccc" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Apt., suite, etc."
+                        placeholderTextColor="#ccc"
+                    />
 
                     <Text style={styles.inputLabel}>City</Text>
                     <TextInput
@@ -201,7 +242,19 @@ export default function SubscribePage() {
                         placeholder="A0A 0A0"
                         placeholderTextColor="#ccc"
                         value={zip}
-                        onChangeText={setZip}
+                        onChangeText={(text) => {
+                            const cleaned = text
+                                .toUpperCase()
+                                .replace(/[^A-Z0-9]/g, "")
+                                .slice(0, 6);
+                            const formatted =
+                                cleaned.length > 3
+                                    ? `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`
+                                    : cleaned;
+                            setZip(formatted);
+                        }}
+                        autoCapitalize="characters"
+                        maxLength={7}
                     />
 
                     <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
@@ -248,13 +301,13 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginRight: 15,
-        paddingTop: 40
+        paddingTop: 40,
     },
     headerTitle: {
         fontSize: 18,
-        color: "#ccc",
+        color: "#000",
         fontWeight: "500",
-        paddingTop: 40
+        paddingTop: 40,
     },
     content: {
         paddingHorizontal: 25,
@@ -309,21 +362,32 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 15,
     },
+    paymentRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    paymentLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#666",
+    },
+    paymentDotsText: {
+        flex: 1,
+        marginHorizontal: 6,
+        color: "#B8B8B8",
+        fontSize: 12,
+        lineHeight: 12,
+    },
+    paymentValue: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#333",
+    },
     detailRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         marginBottom: 8,
-    },
-    detailLabel: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: "#666",
-        flex: 1,
-    },
-    detailValue: {
-        fontSize: 12,
-        fontWeight: "700",
-        color: "#333",
     },
     divider: {
         height: 1,
@@ -379,6 +443,13 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         width: "100%",
+    },
+    halfInputLeft: {
+        flex: 1,
+        marginRight: 10,
+    },
+    halfInputRight: {
+        flex: 1,
     },
     confirmButton: {
         backgroundColor: "#1DA1F2",
