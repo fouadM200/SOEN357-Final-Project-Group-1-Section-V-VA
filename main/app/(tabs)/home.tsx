@@ -20,7 +20,11 @@ import type { MealSection } from "@/types/calorieTracker";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
 const WORKOUT_TIMER_STORAGE_KEY = "workoutTimerByDate";
+const DAILY_METRICS_STORAGE_KEY = "dailyMetricsByDate";
 const WORKOUT_GOAL_MINUTES = 120;
+const STEP_GOAL = 10000;
+const MAX_BPM = 140;
+const MIN_BPM = 72;
 
 const badges = [
     "Completed your first workout session",
@@ -34,6 +38,13 @@ type WorkoutTimerEntry = {
 };
 
 type WorkoutTimerMap = Record<string, WorkoutTimerEntry>;
+
+type DailyMetricsEntry = {
+    stepsLeft: number;
+    bpm: number;
+};
+
+type DailyMetricsMap = Record<string, DailyMetricsEntry>;
 
 function formatDateKey(date: Date) {
     const year = date.getFullYear();
@@ -55,16 +66,65 @@ function formatHoursMinutes(totalSeconds: number) {
     return `${hours}h${minutes}`;
 }
 
+function getStartOfDay(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function isFutureDay(date: Date) {
+    return getStartOfDay(date).getTime() > getStartOfDay(new Date()).getTime();
+}
+
+function isToday(date: Date) {
+    return getStartOfDay(date).getTime() === getStartOfDay(new Date()).getTime();
+}
+
+function getRandomInt(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function generateRandomHeartRate() {
+    return getRandomInt(78, 108);
+}
+
+function getNextLogicalHeartRate(currentBpm: number, isWorkoutRunning: boolean) {
+    const delta = getRandomInt(1, 4);
+
+    if (isWorkoutRunning) {
+        const direction = Math.random() < 0.7 ? 1 : -1;
+        return clamp(currentBpm + direction * delta, 95, MAX_BPM);
+    }
+
+    const direction = Math.random() < 0.65 ? -1 : 1;
+    return clamp(currentBpm + direction * delta, MIN_BPM, 110);
+}
+
+function generateDailyMetricsEntry(): DailyMetricsEntry {
+    const stepsCompleted = getRandomInt(2500, 9500);
+    const stepsLeft = Math.max(STEP_GOAL - stepsCompleted, 0);
+
+    return {
+        stepsLeft,
+        bpm: generateRandomHeartRate(),
+    };
+}
+
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [sectionsForSelectedDate, setSectionsForSelectedDate] = useState<MealSection[]>([]);
     const [workoutTimersByDate, setWorkoutTimersByDate] = useState<WorkoutTimerMap>({});
+    const [dailyMetricsByDate, setDailyMetricsByDate] = useState<DailyMetricsMap>({});
+    const [currentDayHeartRate, setCurrentDayHeartRate] = useState(0);
     const [countdownValue, setCountdownValue] = useState<number | "GO" | null>(null);
     const [isCountdownVisible, setIsCountdownVisible] = useState(false);
 
     const workoutIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const bpmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate]);
 
@@ -72,6 +132,18 @@ export default function HomePage() {
         elapsedSeconds: 0,
         isRunning: false,
     };
+
+    const selectedStoredMetrics = dailyMetricsByDate[selectedDateKey] ?? {
+        stepsLeft: 0,
+        bpm: 0,
+    };
+
+    const selectedStepsLeft = isFutureDay(selectedDate) ? 0 : selectedStoredMetrics.stepsLeft;
+    const selectedHeartRate = isFutureDay(selectedDate)
+        ? 0
+        : isToday(selectedDate)
+            ? currentDayHeartRate
+            : selectedStoredMetrics.bpm;
 
     const loadFirstName = async () => {
         const savedFirstName = await AsyncStorage.getItem("firstName");
@@ -91,6 +163,17 @@ export default function HomePage() {
         }
     }, []);
 
+    const saveDailyMetrics = useCallback(async (metrics: DailyMetricsMap) => {
+        try {
+            await AsyncStorage.setItem(
+                DAILY_METRICS_STORAGE_KEY,
+                JSON.stringify(metrics)
+            );
+        } catch (error) {
+            console.error("Failed to save daily metrics:", error);
+        }
+    }, []);
+
     const loadWorkoutTimers = useCallback(async () => {
         try {
             const savedTimers = await AsyncStorage.getItem(WORKOUT_TIMER_STORAGE_KEY);
@@ -107,6 +190,59 @@ export default function HomePage() {
             setWorkoutTimersByDate({});
         }
     }, []);
+
+    const loadDailyMetrics = useCallback(async () => {
+        try {
+            const savedMetrics = await AsyncStorage.getItem(DAILY_METRICS_STORAGE_KEY);
+
+            if (!savedMetrics) {
+                setDailyMetricsByDate({});
+                return;
+            }
+
+            const parsedMetrics = JSON.parse(savedMetrics) as DailyMetricsMap;
+            setDailyMetricsByDate(parsedMetrics);
+        } catch (error) {
+            console.error("Failed to load daily metrics:", error);
+            setDailyMetricsByDate({});
+        }
+    }, []);
+
+    const ensureMetricsForSelectedDate = useCallback(() => {
+        if (isFutureDay(selectedDate)) {
+            return;
+        }
+
+        setDailyMetricsByDate((prev) => {
+            if (prev[selectedDateKey]) {
+                return prev;
+            }
+
+            const updatedMetrics = {
+                ...prev,
+                [selectedDateKey]: generateDailyMetricsEntry(),
+            };
+
+            void saveDailyMetrics(updatedMetrics);
+            return updatedMetrics;
+        });
+    }, [saveDailyMetrics, selectedDate, selectedDateKey]);
+
+    const initializeHeartRateForSelectedDate = useCallback(() => {
+        if (isFutureDay(selectedDate)) {
+            setCurrentDayHeartRate(0);
+            return;
+        }
+
+        if (isToday(selectedDate)) {
+            const storedBpm = dailyMetricsByDate[selectedDateKey]?.bpm ?? generateRandomHeartRate();
+            setCurrentDayHeartRate(storedBpm);
+            return;
+        }
+
+        const storedBpm = dailyMetricsByDate[selectedDateKey]?.bpm ?? 0;
+        setCurrentDayHeartRate(storedBpm);
+    }, [dailyMetricsByDate, selectedDate, selectedDateKey]);
 
     const loadCaloriesForSelectedDate = useCallback(async () => {
         try {
@@ -142,6 +278,13 @@ export default function HomePage() {
         }
     }, []);
 
+    const stopBpmInterval = useCallback(() => {
+        if (bpmIntervalRef.current) {
+            clearInterval(bpmIntervalRef.current);
+            bpmIntervalRef.current = null;
+        }
+    }, []);
+
     const startWorkoutInterval = useCallback(() => {
         stopWorkoutInterval();
 
@@ -166,6 +309,28 @@ export default function HomePage() {
             });
         }, 1000);
     }, [saveWorkoutTimers, selectedDateKey, stopWorkoutInterval]);
+
+    const startBpmInterval = useCallback(() => {
+        stopBpmInterval();
+
+        if (!isToday(selectedDate)) {
+            return;
+        }
+
+        bpmIntervalRef.current = setInterval(() => {
+            setCurrentDayHeartRate((prev) => {
+                const baseBpm =
+                    prev > 0
+                        ? prev
+                        : dailyMetricsByDate[selectedDateKey]?.bpm ?? generateRandomHeartRate();
+
+                return getNextLogicalHeartRate(
+                    baseBpm,
+                    workoutTimersByDate[selectedDateKey]?.isRunning ?? false
+                );
+            });
+        }, 60000);
+    }, [dailyMetricsByDate, selectedDate, selectedDateKey, stopBpmInterval, workoutTimersByDate]);
 
     const startWorkout = useCallback(() => {
         if (selectedWorkoutEntry.isRunning || isCountdownVisible) {
@@ -250,18 +415,50 @@ export default function HomePage() {
     useEffect(() => {
         loadFirstName();
         loadWorkoutTimers();
-    }, [loadWorkoutTimers]);
+        loadDailyMetrics();
+    }, [loadDailyMetrics, loadWorkoutTimers]);
 
     useEffect(() => {
         loadCaloriesForSelectedDate();
     }, [loadCaloriesForSelectedDate]);
+
+    useEffect(() => {
+        ensureMetricsForSelectedDate();
+    }, [ensureMetricsForSelectedDate]);
+
+    useEffect(() => {
+        initializeHeartRateForSelectedDate();
+    }, [initializeHeartRateForSelectedDate]);
+
+    useEffect(() => {
+        startBpmInterval();
+
+        return () => {
+            stopBpmInterval();
+        };
+    }, [startBpmInterval, stopBpmInterval]);
 
     useFocusEffect(
         useCallback(() => {
             loadFirstName();
             loadCaloriesForSelectedDate();
             loadWorkoutTimers();
-        }, [loadCaloriesForSelectedDate, loadWorkoutTimers])
+            loadDailyMetrics();
+            initializeHeartRateForSelectedDate();
+            startBpmInterval();
+
+            return () => {
+                stopBpmInterval();
+            };
+        }, [
+            initializeHeartRateForSelectedDate,
+            loadCaloriesForSelectedDate,
+            loadDailyMetrics,
+            loadFirstName,
+            loadWorkoutTimers,
+            startBpmInterval,
+            stopBpmInterval,
+        ])
     );
 
     useEffect(() => {
@@ -285,8 +482,9 @@ export default function HomePage() {
         return () => {
             stopWorkoutInterval();
             stopCountdownInterval();
+            stopBpmInterval();
         };
-    }, [stopCountdownInterval, stopWorkoutInterval]);
+    }, [stopBpmInterval, stopCountdownInterval, stopWorkoutInterval]);
 
     const totalConsumed = sectionsForSelectedDate.reduce(
         (sum, section) => sum + section.current,
@@ -305,6 +503,16 @@ export default function HomePage() {
         1
     );
 
+    const stepsProgress =
+        selectedStepsLeft === 0 && isFutureDay(selectedDate)
+            ? 0
+            : Math.min((STEP_GOAL - selectedStepsLeft) / STEP_GOAL, 1);
+
+    const heartRateProgress =
+        selectedHeartRate === 0
+            ? 0
+            : Math.min(selectedHeartRate / MAX_BPM, 1);
+
     const reportCards = [
         {
             title: "Workout completed",
@@ -322,17 +530,17 @@ export default function HomePage() {
         },
         {
             title: "Heart Rate",
-            number: "86",
+            number: String(selectedHeartRate),
             unit: "BPM",
             icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
-            progress: 0.82,
+            progress: heartRateProgress,
         },
         {
             title: "Steps",
-            number: "2250",
+            number: String(selectedStepsLeft),
             unit: "Steps left",
             icon: "footsteps-outline" as keyof typeof Ionicons.glyphMap,
-            progress: 0.35,
+            progress: stepsProgress,
         },
     ];
 
