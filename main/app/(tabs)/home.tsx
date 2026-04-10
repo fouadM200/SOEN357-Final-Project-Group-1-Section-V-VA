@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Image,
     ScrollView,
@@ -14,16 +14,37 @@ import { useFocusEffect } from "@react-navigation/native";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import Calendar from "../../components/Calendar";
 import TodayReportCard from "../../components/TodayReportCard";
+import WorkoutTimerCard from "../../components/WorkoutTimerCard";
 import calorieTrackerData from "../../data/calorieTrackerData.json";
 import type { MealSection } from "@/types/calorieTracker";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
+const WORKOUT_TIMER_STORAGE_KEY = "workoutTimerByDate";
+const DAILY_METRICS_STORAGE_KEY = "dailyMetricsByDate";
+const WORKOUT_GOAL_MINUTES = 120;
+const STEP_GOAL = 10000;
+const MAX_BPM = 140;
+const MIN_BPM = 72;
 
 const badges = [
     "Completed your first workout session",
     "Worked out 3 days in a row",
     "Reached your daily calorie intake goal for 7 days in a row",
 ];
+
+type WorkoutTimerEntry = {
+    elapsedSeconds: number;
+    isRunning: boolean;
+};
+
+type WorkoutTimerMap = Record<string, WorkoutTimerEntry>;
+
+type DailyMetricsEntry = {
+    stepsLeft: number;
+    bpm: number;
+};
+
+type DailyMetricsMap = Record<string, DailyMetricsEntry>;
 
 function formatDateKey(date: Date) {
     const year = date.getFullYear();
@@ -32,15 +53,97 @@ function formatDateKey(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
+function formatDuration(totalSeconds: number) {
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
+}
+
+function formatHoursMinutes(totalSeconds: number) {
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+    return `${hours}h${minutes}`;
+}
+
+function getStartOfDay(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function isFutureDay(date: Date) {
+    return getStartOfDay(date).getTime() > getStartOfDay(new Date()).getTime();
+}
+
+function isToday(date: Date) {
+    return getStartOfDay(date).getTime() === getStartOfDay(new Date()).getTime();
+}
+
+function getRandomInt(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function generateRandomHeartRate() {
+    return getRandomInt(78, 108);
+}
+
+function getNextLogicalHeartRate(currentBpm: number, isWorkoutRunning: boolean) {
+    const delta = getRandomInt(1, 4);
+
+    if (isWorkoutRunning) {
+        const direction = Math.random() < 0.7 ? 1 : -1;
+        return clamp(currentBpm + direction * delta, 95, MAX_BPM);
+    }
+
+    const direction = Math.random() < 0.65 ? -1 : 1;
+    return clamp(currentBpm + direction * delta, MIN_BPM, 110);
+}
+
+function generateDailyMetricsEntry(): DailyMetricsEntry {
+    const stepsCompleted = getRandomInt(2500, 9500);
+    const stepsLeft = Math.max(STEP_GOAL - stepsCompleted, 0);
+
+    return {
+        stepsLeft,
+        bpm: generateRandomHeartRate(),
+    };
+}
+
 export default function HomePage() {
     const [firstName, setFirstName] = useState("User");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [sectionsForSelectedDate, setSectionsForSelectedDate] = useState<MealSection[]>([]);
+    const [workoutTimersByDate, setWorkoutTimersByDate] = useState<WorkoutTimerMap>({});
+    const [dailyMetricsByDate, setDailyMetricsByDate] = useState<DailyMetricsMap>({});
+    const [currentDayHeartRate, setCurrentDayHeartRate] = useState(0);
+    const [countdownValue, setCountdownValue] = useState<number | "GO" | null>(null);
+    const [isCountdownVisible, setIsCountdownVisible] = useState(false);
 
-    const selectedDateKey = useMemo(
-        () => formatDateKey(selectedDate),
-        [selectedDate]
-    );
+    const workoutIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const bpmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate]);
+
+    const selectedWorkoutEntry = workoutTimersByDate[selectedDateKey] ?? {
+        elapsedSeconds: 0,
+        isRunning: false,
+    };
+
+    const selectedStoredMetrics = dailyMetricsByDate[selectedDateKey] ?? {
+        stepsLeft: 0,
+        bpm: 0,
+    };
+
+    const selectedStepsLeft = isFutureDay(selectedDate) ? 0 : selectedStoredMetrics.stepsLeft;
+    const selectedHeartRate = isFutureDay(selectedDate)
+        ? 0
+        : isToday(selectedDate)
+            ? currentDayHeartRate
+            : selectedStoredMetrics.bpm;
 
     const loadFirstName = async () => {
         const savedFirstName = await AsyncStorage.getItem("firstName");
@@ -48,6 +151,98 @@ export default function HomePage() {
             setFirstName(savedFirstName);
         }
     };
+
+    const saveWorkoutTimers = useCallback(async (timers: WorkoutTimerMap) => {
+        try {
+            await AsyncStorage.setItem(
+                WORKOUT_TIMER_STORAGE_KEY,
+                JSON.stringify(timers)
+            );
+        } catch (error) {
+            console.error("Failed to save workout timer data:", error);
+        }
+    }, []);
+
+    const saveDailyMetrics = useCallback(async (metrics: DailyMetricsMap) => {
+        try {
+            await AsyncStorage.setItem(
+                DAILY_METRICS_STORAGE_KEY,
+                JSON.stringify(metrics)
+            );
+        } catch (error) {
+            console.error("Failed to save daily metrics:", error);
+        }
+    }, []);
+
+    const loadWorkoutTimers = useCallback(async () => {
+        try {
+            const savedTimers = await AsyncStorage.getItem(WORKOUT_TIMER_STORAGE_KEY);
+
+            if (!savedTimers) {
+                setWorkoutTimersByDate({});
+                return;
+            }
+
+            const parsedTimers = JSON.parse(savedTimers) as WorkoutTimerMap;
+            setWorkoutTimersByDate(parsedTimers);
+        } catch (error) {
+            console.error("Failed to load workout timer data:", error);
+            setWorkoutTimersByDate({});
+        }
+    }, []);
+
+    const loadDailyMetrics = useCallback(async () => {
+        try {
+            const savedMetrics = await AsyncStorage.getItem(DAILY_METRICS_STORAGE_KEY);
+
+            if (!savedMetrics) {
+                setDailyMetricsByDate({});
+                return;
+            }
+
+            const parsedMetrics = JSON.parse(savedMetrics) as DailyMetricsMap;
+            setDailyMetricsByDate(parsedMetrics);
+        } catch (error) {
+            console.error("Failed to load daily metrics:", error);
+            setDailyMetricsByDate({});
+        }
+    }, []);
+
+    const ensureMetricsForSelectedDate = useCallback(() => {
+        if (isFutureDay(selectedDate)) {
+            return;
+        }
+
+        setDailyMetricsByDate((prev) => {
+            if (prev[selectedDateKey]) {
+                return prev;
+            }
+
+            const updatedMetrics = {
+                ...prev,
+                [selectedDateKey]: generateDailyMetricsEntry(),
+            };
+
+            void saveDailyMetrics(updatedMetrics);
+            return updatedMetrics;
+        });
+    }, [saveDailyMetrics, selectedDate, selectedDateKey]);
+
+    const initializeHeartRateForSelectedDate = useCallback(() => {
+        if (isFutureDay(selectedDate)) {
+            setCurrentDayHeartRate(0);
+            return;
+        }
+
+        if (isToday(selectedDate)) {
+            const storedBpm = dailyMetricsByDate[selectedDateKey]?.bpm ?? generateRandomHeartRate();
+            setCurrentDayHeartRate(storedBpm);
+            return;
+        }
+
+        const storedBpm = dailyMetricsByDate[selectedDateKey]?.bpm ?? 0;
+        setCurrentDayHeartRate(storedBpm);
+    }, [dailyMetricsByDate, selectedDate, selectedDateKey]);
 
     const loadCaloriesForSelectedDate = useCallback(async () => {
         try {
@@ -69,20 +264,227 @@ export default function HomePage() {
         }
     }, [selectedDateKey]);
 
+    const stopWorkoutInterval = useCallback(() => {
+        if (workoutIntervalRef.current) {
+            clearInterval(workoutIntervalRef.current);
+            workoutIntervalRef.current = null;
+        }
+    }, []);
+
+    const stopCountdownInterval = useCallback(() => {
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+    }, []);
+
+    const stopBpmInterval = useCallback(() => {
+        if (bpmIntervalRef.current) {
+            clearInterval(bpmIntervalRef.current);
+            bpmIntervalRef.current = null;
+        }
+    }, []);
+
+    const startWorkoutInterval = useCallback(() => {
+        stopWorkoutInterval();
+
+        workoutIntervalRef.current = setInterval(() => {
+            setWorkoutTimersByDate((prev) => {
+                const currentEntry = prev[selectedDateKey] ?? {
+                    elapsedSeconds: 0,
+                    isRunning: true,
+                };
+
+                const updatedTimers = {
+                    ...prev,
+                    [selectedDateKey]: {
+                        ...currentEntry,
+                        elapsedSeconds: currentEntry.elapsedSeconds + 1,
+                        isRunning: true,
+                    },
+                };
+
+                void saveWorkoutTimers(updatedTimers);
+                return updatedTimers;
+            });
+        }, 1000);
+    }, [saveWorkoutTimers, selectedDateKey, stopWorkoutInterval]);
+
+    const startBpmInterval = useCallback(() => {
+        stopBpmInterval();
+
+        if (!isToday(selectedDate)) {
+            return;
+        }
+
+        bpmIntervalRef.current = setInterval(() => {
+            setCurrentDayHeartRate((prev) => {
+                const baseBpm =
+                    prev > 0
+                        ? prev
+                        : dailyMetricsByDate[selectedDateKey]?.bpm ?? generateRandomHeartRate();
+
+                return getNextLogicalHeartRate(
+                    baseBpm,
+                    workoutTimersByDate[selectedDateKey]?.isRunning ?? false
+                );
+            });
+        }, 60000);
+    }, [dailyMetricsByDate, selectedDate, selectedDateKey, stopBpmInterval, workoutTimersByDate]);
+
+    const startWorkout = useCallback(() => {
+        if (selectedWorkoutEntry.isRunning || isCountdownVisible) {
+            return;
+        }
+
+        setIsCountdownVisible(true);
+        setCountdownValue(3);
+
+        let currentValue = 3;
+
+        stopCountdownInterval();
+
+        countdownIntervalRef.current = setInterval(() => {
+            currentValue -= 1;
+
+            if (currentValue > 0) {
+                setCountdownValue(currentValue);
+                return;
+            }
+
+            if (currentValue === 0) {
+                setCountdownValue("GO");
+                return;
+            }
+
+            stopCountdownInterval();
+            setIsCountdownVisible(false);
+            setCountdownValue(null);
+
+            setWorkoutTimersByDate((prev) => {
+                const currentEntry = prev[selectedDateKey] ?? {
+                    elapsedSeconds: 0,
+                    isRunning: false,
+                };
+
+                const updatedTimers = {
+                    ...prev,
+                    [selectedDateKey]: {
+                        ...currentEntry,
+                        isRunning: true,
+                    },
+                };
+
+                void saveWorkoutTimers(updatedTimers);
+                return updatedTimers;
+            });
+
+            startWorkoutInterval();
+        }, 1000);
+    }, [
+        isCountdownVisible,
+        saveWorkoutTimers,
+        selectedDateKey,
+        selectedWorkoutEntry.isRunning,
+        startWorkoutInterval,
+        stopCountdownInterval,
+    ]);
+
+    const stopWorkout = useCallback(() => {
+        stopWorkoutInterval();
+
+        setWorkoutTimersByDate((prev) => {
+            const currentEntry = prev[selectedDateKey] ?? {
+                elapsedSeconds: 0,
+                isRunning: false,
+            };
+
+            const updatedTimers = {
+                ...prev,
+                [selectedDateKey]: {
+                    ...currentEntry,
+                    isRunning: false,
+                },
+            };
+
+            void saveWorkoutTimers(updatedTimers);
+            return updatedTimers;
+        });
+    }, [saveWorkoutTimers, selectedDateKey, stopWorkoutInterval]);
+
     useEffect(() => {
         loadFirstName();
-    }, []);
+        loadWorkoutTimers();
+        loadDailyMetrics();
+    }, [loadDailyMetrics, loadWorkoutTimers]);
 
     useEffect(() => {
         loadCaloriesForSelectedDate();
     }, [loadCaloriesForSelectedDate]);
 
+    useEffect(() => {
+        ensureMetricsForSelectedDate();
+    }, [ensureMetricsForSelectedDate]);
+
+    useEffect(() => {
+        initializeHeartRateForSelectedDate();
+    }, [initializeHeartRateForSelectedDate]);
+
+    useEffect(() => {
+        startBpmInterval();
+
+        return () => {
+            stopBpmInterval();
+        };
+    }, [startBpmInterval, stopBpmInterval]);
+
     useFocusEffect(
         useCallback(() => {
             loadFirstName();
             loadCaloriesForSelectedDate();
-        }, [loadCaloriesForSelectedDate])
+            loadWorkoutTimers();
+            loadDailyMetrics();
+            initializeHeartRateForSelectedDate();
+            startBpmInterval();
+
+            return () => {
+                stopBpmInterval();
+            };
+        }, [
+            initializeHeartRateForSelectedDate,
+            loadCaloriesForSelectedDate,
+            loadDailyMetrics,
+            loadFirstName,
+            loadWorkoutTimers,
+            startBpmInterval,
+            stopBpmInterval,
+        ])
     );
+
+    useEffect(() => {
+        if (selectedWorkoutEntry.isRunning) {
+            startWorkoutInterval();
+        } else {
+            stopWorkoutInterval();
+        }
+
+        return () => {
+            stopWorkoutInterval();
+        };
+    }, [
+        selectedDateKey,
+        selectedWorkoutEntry.isRunning,
+        startWorkoutInterval,
+        stopWorkoutInterval,
+    ]);
+
+    useEffect(() => {
+        return () => {
+            stopWorkoutInterval();
+            stopCountdownInterval();
+            stopBpmInterval();
+        };
+    }, [stopBpmInterval, stopCountdownInterval, stopWorkoutInterval]);
 
     const totalConsumed = sectionsForSelectedDate.reduce(
         (sum, section) => sum + section.current,
@@ -91,14 +493,33 @@ export default function HomePage() {
 
     const calorieGoal = calorieTrackerData.calorieSummary.goal;
     const totalRemaining = Math.max(calorieGoal - totalConsumed, 0);
+    const workoutDuration = formatDuration(selectedWorkoutEntry.elapsedSeconds);
+    const totalWorkoutTimeDisplay = formatHoursMinutes(selectedWorkoutEntry.elapsedSeconds);
+
+    const elapsedMinutes = Math.floor(selectedWorkoutEntry.elapsedSeconds / 60);
+    const minutesLeftToWorkout = Math.max(WORKOUT_GOAL_MINUTES - elapsedMinutes, 0);
+    const workoutProgress = Math.min(
+        selectedWorkoutEntry.elapsedSeconds / (WORKOUT_GOAL_MINUTES * 60),
+        1
+    );
+
+    const stepsProgress =
+        selectedStepsLeft === 0 && isFutureDay(selectedDate)
+            ? 0
+            : Math.min((STEP_GOAL - selectedStepsLeft) / STEP_GOAL, 1);
+
+    const heartRateProgress =
+        selectedHeartRate === 0
+            ? 0
+            : Math.min(selectedHeartRate / MAX_BPM, 1);
 
     const reportCards = [
         {
             title: "Workout completed",
-            number: "20",
+            number: String(minutesLeftToWorkout),
             unit: "Minutes left",
             icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
-            progress: 0.72,
+            progress: workoutProgress,
         },
         {
             title: "Active Calories",
@@ -109,17 +530,17 @@ export default function HomePage() {
         },
         {
             title: "Heart Rate",
-            number: "86",
+            number: String(selectedHeartRate),
             unit: "BPM",
             icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
-            progress: 0.82,
+            progress: heartRateProgress,
         },
         {
             title: "Steps",
-            number: "2250",
+            number: String(selectedStepsLeft),
             unit: "Steps left",
             icon: "footsteps-outline" as keyof typeof Ionicons.glyphMap,
-            progress: 0.35,
+            progress: stepsProgress,
         },
     ];
 
@@ -151,9 +572,9 @@ export default function HomePage() {
                         <Text style={styles.sectionTitle}>Today’s report</Text>
 
                         <View style={styles.reportGrid}>
-                            {reportCards.map((card, index) => (
+                            {reportCards.map((card) => (
                                 <TodayReportCard
-                                    key={index}
+                                    key={card.title}
                                     title={card.title}
                                     number={card.number}
                                     unit={card.unit}
@@ -165,14 +586,14 @@ export default function HomePage() {
 
                         <View style={styles.sectionDivider} />
 
-                        <View style={styles.questionRow}>
-                            <Text style={styles.sectionTitle}>Did you workout today?</Text>
-                            <View style={styles.checkbox} />
-                        </View>
-
-                        <TouchableOpacity style={styles.workoutButton}>
-                            <Text style={styles.workoutButtonText}>Access my workout</Text>
-                        </TouchableOpacity>
+                        <WorkoutTimerCard
+                            workoutDuration={workoutDuration}
+                            isRunning={selectedWorkoutEntry.isRunning}
+                            isCountdownVisible={isCountdownVisible}
+                            countdownValue={countdownValue}
+                            onStartWorkout={startWorkout}
+                            onStopWorkout={stopWorkout}
+                        />
 
                         <View style={styles.sectionDivider} />
 
@@ -196,7 +617,7 @@ export default function HomePage() {
 
                             <View style={styles.milestoneItem}>
                                 <Text style={styles.milestoneLabel}>Total workout time</Text>
-                                <Text style={styles.milestoneValue}>01h42</Text>
+                                <Text style={styles.milestoneValue}>{totalWorkoutTimeDisplay}</Text>
                             </View>
                         </View>
 
@@ -205,23 +626,29 @@ export default function HomePage() {
                         <Text style={styles.sectionTitle}>Your badges for this week</Text>
 
                         <View style={styles.badgesContainer}>
-                            {badges.map((badge, index) => (
-                                <View key={index} style={styles.badgeRow}>
-                                    <Ionicons
-                                        name={
-                                            index === 0
-                                                ? "shield-checkmark"
-                                                : index === 1
-                                                    ? "ribbon"
-                                                    : "trophy"
-                                        }
-                                        size={22}
-                                        color="#1EA7FF"
-                                        style={styles.badgeIcon}
-                                    />
-                                    <Text style={styles.badgeText}>{badge}</Text>
-                                </View>
-                            ))}
+                            {badges.map((badge) => {
+                                let badgeIconName: keyof typeof Ionicons.glyphMap;
+
+                                if (badge === "Completed your first workout session") {
+                                    badgeIconName = "shield-checkmark";
+                                } else if (badge === "Worked out 3 days in a row") {
+                                    badgeIconName = "ribbon";
+                                } else {
+                                    badgeIconName = "trophy";
+                                }
+
+                                return (
+                                    <View key={badge} style={styles.badgeRow}>
+                                        <Ionicons
+                                            name={badgeIconName}
+                                            size={22}
+                                            color="#1EA7FF"
+                                            style={styles.badgeIcon}
+                                        />
+                                        <Text style={styles.badgeText}>{badge}</Text>
+                                    </View>
+                                );
+                            })}
                         </View>
 
                         <TouchableOpacity style={styles.keepItUpButton}>
@@ -275,37 +702,6 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         justifyContent: "space-between",
         marginTop: 2,
-    },
-    questionRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    checkbox: {
-        width: 18,
-        height: 18,
-        borderWidth: 2,
-        borderColor: "#555",
-        borderRadius: 2,
-        marginBottom: 12,
-    },
-    workoutButton: {
-        backgroundColor: "#1EA7FF",
-        borderRadius: 24,
-        paddingVertical: 14,
-        alignItems: "center",
-        marginTop: 4,
-        marginHorizontal: 18,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.18,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    workoutButtonText: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "700",
     },
     milestonesContainer: {
         gap: 8,
