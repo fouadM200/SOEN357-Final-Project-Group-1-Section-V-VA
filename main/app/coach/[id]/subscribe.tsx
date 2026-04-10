@@ -245,14 +245,12 @@ export default function SubscribePage() {
                         onChangeText={(text) => {
                             const cleaned = text
                                 .toUpperCase()
-                                .replaceAll(/[^A-Z0-9]/g, "")
+                                .replace(/[^A-Z0-9]/g, "")
                                 .slice(0, 6);
-
                             const formatted =
                                 cleaned.length > 3
                                     ? `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`
                                     : cleaned;
-
                             setZip(formatted);
                         }}
                         autoCapitalize="characters"

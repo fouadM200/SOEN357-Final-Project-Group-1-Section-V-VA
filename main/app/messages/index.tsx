@@ -12,7 +12,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import SearchBar from "../../components/SearchBar";
-import { useCoaches } from "../../hooks/useCoach";
+import {
+    useCoaches,
+    useSubscribedCoachIds,
+} from "../../hooks/useCoach";
 import {
     getAllConversations,
     type SavedConversation,
@@ -23,10 +26,14 @@ type ConversationListItem = {
     coachName: string;
     coachImage?: any;
     lastMessage: string;
-    updatedAt: string;
+    updatedAt: string | null;
 };
 
-function formatConversationDate(dateInput: string) {
+function formatConversationDate(dateInput: string | null) {
+    if (!dateInput) {
+        return "";
+    }
+
     const date = new Date(dateInput);
 
     if (Number.isNaN(date.getTime())) {
@@ -42,6 +49,8 @@ function formatConversationDate(dateInput: string) {
 
 export default function MessagesPage() {
     const coaches = useCoaches();
+    const subscribedCoachIds = useSubscribedCoachIds();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
 
@@ -63,39 +72,59 @@ export default function MessagesPage() {
     }, []);
 
     const conversationItems = useMemo(() => {
-        const mappedItems: ConversationListItem[] = savedConversations
-            .map((conversation) => {
-                const coach = coaches.find((item) => item.id === conversation.coachId);
+        const conversationMap = new Map<string, SavedConversation>();
+
+        savedConversations.forEach((conversation) => {
+            conversationMap.set(conversation.coachId, conversation);
+        });
+
+        const coachIdsToDisplay = Array.from(
+            new Set([
+                ...subscribedCoachIds,
+                ...savedConversations.map((conversation) => conversation.coachId),
+            ])
+        );
+
+        const items: ConversationListItem[] = coachIdsToDisplay
+            .map((coachId) => {
+                const coach = coaches.find((item) => item.id === coachId);
 
                 if (!coach) {
                     return null;
                 }
 
+                const savedConversation = conversationMap.get(coachId);
+
                 return {
                     coachId: coach.id,
                     coachName: coach.name,
                     coachImage: coach.image,
-                    lastMessage: conversation.lastMessage,
-                    updatedAt: conversation.updatedAt,
+                    lastMessage: savedConversation?.lastMessage ?? "Start a conversation",
+                    updatedAt: savedConversation?.updatedAt ?? null,
                 };
             })
             .filter((item): item is ConversationListItem => item !== null)
-            .sort(
-                (firstItem, secondItem) =>
-                    new Date(secondItem.updatedAt).getTime() -
-                    new Date(firstItem.updatedAt).getTime()
-            );
+            .sort((firstItem, secondItem) => {
+                const firstTime = firstItem.updatedAt
+                    ? new Date(firstItem.updatedAt).getTime()
+                    : 0;
+                const secondTime = secondItem.updatedAt
+                    ? new Date(secondItem.updatedAt).getTime()
+                    : 0;
+
+                return secondTime - firstTime;
+            });
 
         const trimmedQuery = searchQuery.trim().toLowerCase();
 
         if (!trimmedQuery) {
-            return mappedItems;
+            return items;
         }
 
-        return mappedItems.filter((item) =>
+        return items.filter((item) =>
             item.coachName.toLowerCase().includes(trimmedQuery)
         );
-    }, [savedConversations, coaches, searchQuery]);
+    }, [savedConversations, subscribedCoachIds, coaches, searchQuery]);
 
     return (
         <>
@@ -152,7 +181,10 @@ export default function MessagesPage() {
                                             <Text style={styles.coachName}>
                                                 {item.coachName}
                                             </Text>
-                                            <Text style={styles.lastMessage} numberOfLines={1}>
+                                            <Text
+                                                style={styles.lastMessage}
+                                                numberOfLines={1}
+                                            >
                                                 {item.lastMessage}
                                             </Text>
                                         </View>

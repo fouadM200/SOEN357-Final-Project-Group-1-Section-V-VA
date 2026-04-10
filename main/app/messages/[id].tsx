@@ -1,66 +1,50 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Image,
     ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCoach } from "../../hooks/useCoach";
+import { router, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCoach, useSubscribedCoachIds } from "@/hooks/useCoach";
 import {
     ChatMessage,
     getMessages,
     saveConversation,
     saveMessages,
-} from "../../utils/messageStorage";
+} from "@/utils/messageStorage";
 import MessageBubble from "@/components/MessageBubble";
 import MessageDateChip from "@/components/MessageDateChip";
 import MessageInputBar from "@/components/MessageInputBar";
 
-function formatConversationDate(dateInput: string | Date) {
-    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+const API_BASE_URL =
+    process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:5000";
+
+function formatDateChipLabel(dateString: string) {
+    const date = new Date(dateString);
 
     if (Number.isNaN(date.getTime())) {
         return "";
     }
 
-    const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
-    const month = date.toLocaleDateString("en-US", { month: "short" });
-    const day = date.getDate();
-    const year = date.getFullYear();
-
-    return `${weekday}, ${month} ${day}, ${year}`;
+    return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
 }
 
-function formatMessageTime(dateInput: string | Date) {
-    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    if (Number.isNaN(date.getTime())) {
-        return "";
-    }
-
-    return date
-        .toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-        })
-        .toLowerCase();
-}
-
-function isSameCalendarDay(firstDateInput: string | Date, secondDateInput: string | Date) {
-    const firstDate =
-        typeof firstDateInput === "string" ? new Date(firstDateInput) : firstDateInput;
-    const secondDate =
-        typeof secondDateInput === "string" ? new Date(secondDateInput) : secondDateInput;
-
-    if (Number.isNaN(firstDate.getTime()) || Number.isNaN(secondDate.getTime())) {
-        return false;
-    }
+function isSameCalendarDay(first: string, second: string) {
+    const firstDate = new Date(first);
+    const secondDate = new Date(second);
 
     return (
         firstDate.getFullYear() === secondDate.getFullYear() &&
@@ -70,91 +54,101 @@ function isSameCalendarDay(firstDateInput: string | Date, secondDateInput: strin
 }
 
 export default function CoachChatPage() {
-    const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
-    const coach = useCoach(id || "");
+    const coach = useCoach(id);
+    const subscribedCoachIds = useSubscribedCoachIds();
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
     const scrollViewRef = useRef<ScrollView>(null);
 
-    const scrollToBottom = (animated = true) => {
+    const isSubscribed = useMemo(() => {
+        if (!id) {
+            return false;
+        }
+
+        return subscribedCoachIds.includes(id);
+    }, [id, subscribedCoachIds]);
+
+    const scrollToBottom = useCallback((animated: boolean) => {
         requestAnimationFrame(() => {
             scrollViewRef.current?.scrollToEnd({ animated });
         });
-    };
+    }, []);
 
-    useEffect(() => {
-        const loadStoredMessages = async () => {
-            if (!coach) {
-                setIsLoadingMessages(false);
-                return;
-            }
-
-            setIsLoadingMessages(true);
-
-            const storedMessages = await getMessages(coach.id);
-            setMessages(storedMessages);
-
-            if (storedMessages.length > 0) {
-                const lastMessage = storedMessages[storedMessages.length - 1];
-                await saveConversation(coach.id, lastMessage.text);
-            }
-
-            setIsLoadingMessages(false);
-
-            setTimeout(() => {
-                scrollToBottom(false);
-            }, 50);
-        };
-
-        loadStoredMessages();
-    }, [coach]);
-
-    useEffect(() => {
-        if (!isLoadingMessages) {
-            scrollToBottom(true);
+    const loadStoredMessages = useCallback(async () => {
+        if (!id) {
+            return;
         }
-    }, [messages, isLoadingMessages]);
 
-    const wait = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
+        const storedMessages = await getMessages(id);
+        setMessages(storedMessages);
+
+        setTimeout(() => {
+            scrollToBottom(false);
+        }, 50);
+    }, [id, scrollToBottom]);
+
+    useEffect(() => {
+        loadStoredMessages();
+    }, [loadStoredMessages]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadStoredMessages();
+        }, [loadStoredMessages])
+    );
+
+    useEffect(() => {
+        scrollToBottom(true);
+    }, [messages, scrollToBottom]);
 
     const handleSend = async () => {
-        const trimmed = input.trim();
+        const trimmedInput = input.trim();
 
-        if (!trimmed || isGenerating || !coach) {
+        if (!trimmedInput || !id || !coach || isGenerating) {
             return;
         }
 
         const userMessage: ChatMessage = {
-            id: Date.now().toString(),
+            id: `user-${Date.now()}`,
             sender: "user",
-            text: trimmed,
+            text: trimmedInput,
             timestamp: new Date().toISOString(),
         };
 
-        const updatedMessages = [...messages, userMessage];
-
-        setMessages(updatedMessages);
+        const updatedMessagesAfterUser = [...messages, userMessage];
+        setMessages(updatedMessagesAfterUser);
         setInput("");
+
+        await saveMessages(id, updatedMessagesAfterUser);
+        await saveConversation(id, trimmedInput);
+
+        if (!isSubscribed) {
+            const denyMessage: ChatMessage = {
+                id: `coach-deny-${Date.now() + 1}`,
+                sender: "coach",
+                text: `You're not subscribed again with ${coach.name}. Please re-subscribe in order to communicate with the online coach again.`,
+                timestamp: new Date().toISOString(),
+            };
+
+            const updatedMessagesAfterDeny = [
+                ...updatedMessagesAfterUser,
+                denyMessage,
+            ];
+
+            setMessages(updatedMessagesAfterDeny);
+            await saveMessages(id, updatedMessagesAfterDeny);
+            await saveConversation(id, denyMessage.text);
+            return;
+        }
+
         setIsGenerating(true);
 
-        await saveMessages(coach.id, updatedMessages);
-        await saveConversation(coach.id, userMessage.text);
-
-        scrollToBottom(true);
-
         try {
-            const apiBaseUrl =
-                process.env.EXPO_PUBLIC_API_BASE_URL || "http://127.0.0.1:5000";
-
-            const url = `${apiBaseUrl}/api/mock-coach-reply`;
-
-            const response = await fetch(url, {
+            const response = await fetch(`${API_BASE_URL}/api/mock-coach-reply`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -162,98 +156,77 @@ export default function CoachChatPage() {
                 body: JSON.stringify({
                     coachName: coach.name,
                     coachSpecialty: coach.specialty ?? "",
-                    messages: updatedMessages.slice(-8),
+                    messages: updatedMessagesAfterUser.map((message) => ({
+                        sender: message.sender,
+                        text: message.text,
+                    })),
                 }),
             });
 
-            const data = await response.json();
+            const rawText = await response.text();
 
-            const randomDelay = 1200 + Math.floor(Math.random() * 1800);
-            await wait(randomDelay);
+            let data: { reply?: string } = {};
+
+            try {
+                data = JSON.parse(rawText);
+            } catch {
+                data = {};
+            }
+
+            const replyText =
+                typeof data.reply === "string" && data.reply.trim() !== ""
+                    ? data.reply.trim()
+                    : "Sorry, I could not reply right now.";
+
+            if (!response.ok) {
+                console.warn(
+                    `Coach reply backend returned ${response.status}: ${rawText}`
+                );
+            }
 
             const coachReply: ChatMessage = {
-                id: `${Date.now()}-coach`,
+                id: `coach-${Date.now()}`,
                 sender: "coach",
-                text: data.reply || "Sorry, I could not reply right now.",
+                text: replyText,
                 timestamp: new Date().toISOString(),
             };
 
-            const finalMessages = [...updatedMessages, coachReply];
+            const updatedMessagesAfterReply = [
+                ...updatedMessagesAfterUser,
+                coachReply,
+            ];
 
-            setMessages(finalMessages);
-            await saveMessages(coach.id, finalMessages);
-            await saveConversation(coach.id, coachReply.text);
-
-            scrollToBottom(true);
+            setMessages(updatedMessagesAfterReply);
+            await saveMessages(id, updatedMessagesAfterReply);
+            await saveConversation(id, coachReply.text);
         } catch (error) {
-            console.log("Frontend fetch error:", error);
-
-            await wait(1500);
+            console.error("Failed to fetch coach reply:", error);
 
             const fallbackReply: ChatMessage = {
-                id: `${Date.now()}-coach-fallback`,
+                id: `coach-${Date.now()}`,
                 sender: "coach",
                 text: "Sorry, I could not reply right now.",
                 timestamp: new Date().toISOString(),
             };
 
-            const finalMessages = [...updatedMessages, fallbackReply];
+            const updatedMessagesAfterFallback = [
+                ...updatedMessagesAfterUser,
+                fallbackReply,
+            ];
 
-            setMessages(finalMessages);
-            await saveMessages(coach.id, finalMessages);
-            await saveConversation(coach.id, fallbackReply.text);
-
-            scrollToBottom(true);
+            setMessages(updatedMessagesAfterFallback);
+            await saveMessages(id, updatedMessagesAfterFallback);
+            await saveConversation(id, fallbackReply.text);
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const renderedMessages = useMemo(() => {
-        return messages.map((message, index) => {
-            const previousMessage = index > 0 ? messages[index - 1] : null;
-            const shouldShowDateTag =
-                !previousMessage ||
-                !isSameCalendarDay(previousMessage.timestamp, message.timestamp);
-
-            return (
-                <View key={message.id}>
-                    {shouldShowDateTag ? (
-                        <MessageDateChip
-                            label={formatConversationDate(message.timestamp)}
-                        />
-                    ) : null}
-
-                    <MessageBubble
-                        message={message}
-                        formattedTime={formatMessageTime(message.timestamp)}
-                    />
-                </View>
-            );
-        });
-    }, [messages]);
-
-    let messagesContent: React.ReactNode;
-
-    if (isLoadingMessages) {
-        messagesContent = (
-            <Text style={styles.emptyChatText}>Loading messages...</Text>
-        );
-    } else if (messages.length === 0) {
-        messagesContent = (
-            <Text style={styles.emptyChatText}>
-                No messages yet. Start the conversation.
-            </Text>
-        );
-    } else {
-        messagesContent = renderedMessages;
-    }
-
     if (!coach) {
         return (
-            <SafeAreaView style={styles.safeArea} edges={["top"]}>
-                <View style={styles.notFoundContainer}>
-                    <Text style={styles.notFoundText}>Conversation not found.</Text>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>Coach not found.</Text>
                 </View>
             </SafeAreaView>
         );
@@ -261,42 +234,81 @@ export default function CoachChatPage() {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={["top"]}>
-            <View style={styles.container}>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+            >
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
-                        <Ionicons name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
+                    <View style={styles.headerLeft}>
+                        <Ionicons
+                            name="arrow-back"
+                            size={24}
+                            color="#fff"
+                            onPress={() => router.back()}
+                        />
 
-                    <View style={styles.headerCoachInfo}>
-                        {coach.image ? (
-                            <Image source={coach.image} style={styles.headerAvatar} />
-                        ) : (
-                            <View style={styles.headerAvatarFallback}>
-                                <Ionicons name="person" size={20} color="#999" />
-                            </View>
-                        )}
-                        <Text style={styles.headerCoachName}>{coach.name}</Text>
+                        <View style={styles.headerProfile}>
+                            {coach.image ? (
+                                <Image source={coach.image} style={styles.headerAvatar} />
+                            ) : (
+                                <View style={styles.headerAvatarFallback}>
+                                    <Ionicons name="person" size={18} color="#999" />
+                                </View>
+                            )}
+
+                            <Text style={styles.headerCoachName}>{coach.name}</Text>
+                        </View>
                     </View>
 
                     <View style={styles.headerIcons}>
-                        <Ionicons name="call-outline" size={20} color="#fff" />
-                        <Ionicons name="videocam-outline" size={20} color="#fff" />
+                        <Ionicons name="call-outline" size={22} color="#fff" />
+                        <Ionicons name="videocam-outline" size={22} color="#fff" />
                     </View>
                 </View>
 
                 <ImageBackground
                     source={require("../../assets/images/wallpaper.jpg")}
+                    resizeMode="cover"
                     style={styles.chatBackground}
                     imageStyle={styles.chatBackgroundImage}
-                    resizeMode="cover"
                 >
                     <ScrollView
                         ref={scrollViewRef}
+                        style={styles.messagesScroll}
                         contentContainerStyle={styles.messagesContainer}
                         showsVerticalScrollIndicator={false}
-                        onContentSizeChange={() => scrollToBottom(true)}
+                        keyboardShouldPersistTaps="handled"
                     >
-                        {messagesContent}
+                        {messages.length === 0 ? (
+                            <Text style={styles.emptyChatText}>No messages yet.</Text>
+                        ) : (
+                            messages.map((message, index) => {
+                                const previousMessage = messages[index - 1];
+                                const shouldShowDateChip =
+                                    index === 0 ||
+                                    !isSameCalendarDay(
+                                        previousMessage.timestamp,
+                                        message.timestamp
+                                    );
+
+                                return (
+                                    <View key={message.id}>
+                                        {shouldShowDateChip ? (
+                                            <MessageDateChip
+                                                label={formatDateChipLabel(message.timestamp)}
+                                            />
+                                        ) : null}
+
+                                        <MessageBubble
+                                            sender={message.sender}
+                                            text={message.text}
+                                            timestamp={message.timestamp}
+                                        />
+                                    </View>
+                                );
+                            })
+                        )}
 
                         {isGenerating ? (
                             <View style={styles.typingBubble}>
@@ -304,14 +316,15 @@ export default function CoachChatPage() {
                             </View>
                         ) : null}
                     </ScrollView>
-                </ImageBackground>
 
-                <MessageInputBar
-                    value={input}
-                    onChangeText={setInput}
-                    onSend={handleSend}
-                />
-            </View>
+                    <MessageInputBar
+                        value={input}
+                        onChangeText={setInput}
+                        onSend={handleSend}
+                        placeholder="Type your message here..."
+                    />
+                </ImageBackground>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -323,47 +336,39 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: "#F5F5F5",
-    },
-    notFoundContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#F5F5F5",
-    },
-    notFoundText: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: "#111",
+        backgroundColor: "#fff",
     },
     header: {
+        height: 72,
         backgroundColor: "#1DA1F2",
         paddingHorizontal: 16,
-        paddingTop: 14,
-        paddingBottom: 14,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
     },
-    headerCoachInfo: {
+    headerLeft: {
+        flexDirection: "row",
+        alignItems: "center",
         flex: 1,
+    },
+    headerProfile: {
         flexDirection: "row",
         alignItems: "center",
         marginLeft: 12,
     },
     headerAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         marginRight: 10,
     },
     headerAvatarFallback: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: "#DDD",
-        alignItems: "center",
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: "#fff",
         justifyContent: "center",
+        alignItems: "center",
         marginRight: 10,
     },
     headerCoachName: {
@@ -381,6 +386,9 @@ const styles = StyleSheet.create({
     chatBackgroundImage: {
         opacity: 0.8,
     },
+    messagesScroll: {
+        flex: 1,
+    },
     messagesContainer: {
         padding: 16,
         paddingBottom: 24,
@@ -395,8 +403,6 @@ const styles = StyleSheet.create({
     typingBubble: {
         alignSelf: "flex-start",
         backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "#E5E5E5",
         borderRadius: 16,
         paddingHorizontal: 14,
         paddingVertical: 10,
@@ -407,5 +413,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#111",
         lineHeight: 20,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyStateText: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: "#666",
     },
 });

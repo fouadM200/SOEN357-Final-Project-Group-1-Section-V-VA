@@ -12,7 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import {
     useCoaches,
-    useSubscriptions,
+    useSubscribedCoaches,
     unsubscribeFromCoach,
 } from "../../hooks/useCoach";
 import { Coach } from "../../types/coach";
@@ -21,15 +21,19 @@ import CustomBottomNavigation from "../../components/CustomBottomNavigation";
 import UnsubscribeModal from "@/components/modals/UnsubscribeModal";
 import UnsubscribeSuccessModal from "@/components/modals/UnsubscribeSuccessModal";
 
-function getNextRenewalDate(subscriptionDateString: string) {
-    const subscriptionDate = new Date(subscriptionDateString);
+function formatRenewalDate(subscribedAt: string) {
+    const firstSubscriptionDate = new Date(subscribedAt);
 
-    if (Number.isNaN(subscriptionDate.getTime())) {
-        return "Renewal date unavailable";
+    if (Number.isNaN(firstSubscriptionDate.getTime())) {
+        return "";
     }
 
-    const nextRenewalDate = new Date(subscriptionDate);
-    nextRenewalDate.setMonth(nextRenewalDate.getMonth() + 1);
+    const nextRenewalDate = new Date(firstSubscriptionDate);
+    const today = new Date();
+
+    while (nextRenewalDate <= today) {
+        nextRenewalDate.setMonth(nextRenewalDate.getMonth() + 1);
+    }
 
     return nextRenewalDate.toLocaleDateString("en-US", {
         month: "long",
@@ -45,13 +49,13 @@ export default function SubscriptionsPage() {
         useState<Coach | null>(null);
 
     const coaches = useCoaches();
-    const subscriptions = useSubscriptions();
+    const subscribedCoaches = useSubscribedCoaches();
 
-    const subscribedCoaches = useMemo(() => {
-        return subscriptions
+    const subscribedCoachCards = useMemo(() => {
+        return subscribedCoaches
             .map((subscription) => {
                 const coach = coaches.find(
-                    (currentCoach) => currentCoach.id === subscription.coachId
+                    (coachItem) => coachItem.id === subscription.coachId
                 );
 
                 if (!coach) {
@@ -66,12 +70,9 @@ export default function SubscriptionsPage() {
             .filter(
                 (
                     item
-                ): item is {
-                    coach: Coach;
-                    subscribedAt: string;
-                } => item !== null
+                ): item is { coach: Coach; subscribedAt: string } => item !== null
             );
-    }, [coaches, subscriptions]);
+    }, [coaches, subscribedCoaches]);
 
     return (
         <>
@@ -94,9 +95,9 @@ export default function SubscriptionsPage() {
                         }
                     />
 
-                    {subscribedCoaches.length > 0 ? (
+                    {subscribedCoachCards.length > 0 ? (
                         <FlatList
-                            data={subscribedCoaches}
+                            data={subscribedCoachCards}
                             keyExtractor={(item) => item.coach.id}
                             contentContainerStyle={styles.listContent}
                             renderItem={({ item }) => (
@@ -155,11 +156,13 @@ function SubscriptionCard({
                               coach,
                               subscribedAt,
                               onUnsubscribe,
-                          }: Readonly<{
+                          }: {
     coach: Coach;
     subscribedAt: string;
     onUnsubscribe: () => void;
-}>) {
+}) {
+    const nextRenewalDate = formatRenewalDate(subscribedAt);
+
     return (
         <View style={styles.card}>
             <View style={styles.cardTopRow}>
@@ -175,7 +178,7 @@ function SubscriptionCard({
                     <Text style={styles.coachName}>{coach.name}</Text>
 
                     <Text style={styles.renewalText}>
-                        Next renewal: {getNextRenewalDate(subscribedAt)}
+                        Next renewal: {nextRenewalDate}
                     </Text>
 
                     <TouchableOpacity
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 20,
         alignSelf: "flex-start",
-        marginTop: 2,
+        marginTop: 4,
     },
     unsubscribeButtonText: {
         color: "#fff",

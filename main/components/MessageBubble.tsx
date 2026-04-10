@@ -1,83 +1,110 @@
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { ChatMessage } from "@/utils/messageStorage";
+import type { MessageBubbleProps } from "@/types/message";
 
-type MessageBubbleProps = {
-    message: ChatMessage;
-    formattedTime: string;
-};
+function formatMessageTime(timestamp: string) {
+    const date = new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date
+        .toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        })
+        .toLowerCase();
+}
 
 export default function MessageBubble({
-                                          message,
-                                          formattedTime,
+                                          sender,
+                                          text,
+                                          timestamp,
                                       }: Readonly<MessageBubbleProps>) {
-    const isUserMessage = message.sender === "user";
+    const isUserMessage = sender === "user";
+    const formattedTime = formatMessageTime(timestamp);
 
     return (
         <View
             style={[
-                styles.messageBubble,
-                isUserMessage ? styles.userBubble : styles.coachBubble,
+                styles.messageWrapper,
+                isUserMessage ? styles.userWrapper : styles.coachWrapper,
             ]}
         >
-            <Text
+            <View
                 style={[
-                    styles.messageText,
-                    isUserMessage && styles.userMessageText,
+                    styles.messageBubble,
+                    isUserMessage ? styles.userBubble : styles.coachBubble,
                 ]}
             >
-                {message.text}
-            </Text>
+                <Text
+                    style={[
+                        styles.messageText,
+                        isUserMessage ? styles.userText : styles.coachText,
+                    ]}
+                >
+                    {text}
+                </Text>
 
-            <Text
-                style={[
-                    styles.messageTime,
-                    isUserMessage
-                        ? styles.userMessageTime
-                        : styles.coachMessageTime,
-                ]}
-            >
-                {formattedTime}
-            </Text>
+                <Text
+                    style={[
+                        styles.timeText,
+                        isUserMessage ? styles.userTimeText : styles.coachTimeText,
+                    ]}
+                >
+                    {formattedTime}
+                </Text>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    messageWrapper: {
+        marginBottom: 10,
+        maxWidth: "82%",
+    },
+    userWrapper: {
+        alignSelf: "flex-end",
+    },
+    coachWrapper: {
+        alignSelf: "flex-start",
+    },
     messageBubble: {
-        maxWidth: "78%",
+        borderRadius: 16,
         paddingHorizontal: 14,
         paddingTop: 10,
         paddingBottom: 8,
-        borderRadius: 16,
-        marginBottom: 10,
-    },
-    coachBubble: {
-        alignSelf: "flex-start",
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "#E5E5E5",
     },
     userBubble: {
-        alignSelf: "flex-end",
         backgroundColor: "#1DA1F2",
+        borderBottomRightRadius: 4,
+    },
+    coachBubble: {
+        backgroundColor: "#FFFFFF",
+        borderBottomLeftRadius: 4,
     },
     messageText: {
         fontSize: 14,
-        color: "#111",
         lineHeight: 20,
+        marginBottom: 4,
     },
-    userMessageText: {
+    userText: {
         color: "#fff",
     },
-    messageTime: {
+    coachText: {
+        color: "#111",
+    },
+    timeText: {
         fontSize: 11,
-        marginTop: 6,
         alignSelf: "flex-end",
     },
-    coachMessageTime: {
-        color: "#8A8A8A",
+    userTimeText: {
+        color: "#DFF3FF",
     },
-    userMessageTime: {
-        color: "#DDF0FF",
+    coachTimeText: {
+        color: "#777",
     },
 });

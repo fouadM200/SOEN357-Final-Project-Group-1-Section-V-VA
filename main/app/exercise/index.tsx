@@ -38,25 +38,45 @@ export default function ExerciseCategoryScreen() {
         "Smith Machine",
     ];
 
-    const filteredItems = useMemo(() => {
-        if (activeTab === "Muscles") {
-            return exercises.filter((exercise) =>
-                exercise.name.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+    const filteredExercises = useMemo(() => {
+        const trimmedQuery = searchQuery.trim().toLowerCase();
+
+        if (!trimmedQuery) {
+            return exercises;
+        }
+
+        return exercises.filter((exercise) =>
+            exercise.name.toLowerCase().includes(trimmedQuery)
+        );
+    }, [exercises, searchQuery]);
+
+    const filteredExerciseTypes = useMemo(() => {
+        const trimmedQuery = searchQuery.trim().toLowerCase();
+
+        if (!trimmedQuery) {
+            return exerciseTypes;
         }
 
         return exerciseTypes.filter((type) =>
-            type.toLowerCase().includes(searchQuery.toLowerCase())
+            type.toLowerCase().includes(trimmedQuery)
         );
-    }, [activeTab, exercises, searchQuery]);
+    }, [exerciseTypes, searchQuery]);
 
-    const handlePressExercise = (item: any) => {
-        if (activeTab === "Muscles") {
-            router.push({
-                pathname: "/exercise/[id]",
-                params: { id: item.id },
-            });
-        }
+    const handlePressExercise = (exerciseId: string) => {
+        router.push({
+            pathname: "/exercise/[id]",
+            params: { id: exerciseId },
+        });
+    };
+
+    const handlePressType = (type: string) => {
+        router.push({
+            pathname: "/exercise",
+            params: {
+                category: type,
+                tab: "Exercise Type",
+            },
+        });
     };
 
     return (
@@ -77,17 +97,11 @@ export default function ExerciseCategoryScreen() {
                     />
 
                     <View style={styles.content}>
-                        <View style={styles.searchContainer}>
-                            <SearchBar
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholder={
-                                    activeTab === "Muscles"
-                                        ? "Search exercise"
-                                        : "Search type"
-                                }
-                            />
-                        </View>
+                        <SearchBar
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder={`Search ${activeTab === "Muscles" ? "exercise" : "type"}`}
+                        />
 
                         <View style={styles.tabRow}>
                             <TouchableOpacity
@@ -96,6 +110,7 @@ export default function ExerciseCategoryScreen() {
                                     activeTab === "Muscles" && styles.activeTabButton,
                                 ]}
                                 onPress={() => setActiveTab("Muscles")}
+                                activeOpacity={0.85}
                             >
                                 <Text
                                     style={[
@@ -110,16 +125,15 @@ export default function ExerciseCategoryScreen() {
                             <TouchableOpacity
                                 style={[
                                     styles.tabButton,
-                                    activeTab === "Exercise Type" &&
-                                    styles.activeTabButton,
+                                    activeTab === "Exercise Type" && styles.activeTabButton,
                                 ]}
                                 onPress={() => setActiveTab("Exercise Type")}
+                                activeOpacity={0.85}
                             >
                                 <Text
                                     style={[
                                         styles.tabText,
-                                        activeTab === "Exercise Type" &&
-                                        styles.activeTabText,
+                                        activeTab === "Exercise Type" && styles.activeTabText,
                                     ]}
                                 >
                                     Exercise Type
@@ -129,22 +143,18 @@ export default function ExerciseCategoryScreen() {
 
                         {activeTab === "Muscles" ? (
                             <FlatList
-                                data={filteredItems}
+                                data={filteredExercises}
                                 keyExtractor={(item) => item.id}
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={styles.listContent}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         style={styles.exerciseCard}
-                                        onPress={() => handlePressExercise(item)}
+                                        onPress={() => handlePressExercise(item.id)}
+                                        activeOpacity={0.85}
                                     >
-                                        <Image
-                                            source={item.image}
-                                            style={styles.exerciseImage}
-                                        />
-                                        <Text style={styles.exerciseName}>
-                                            {item.name}
-                                        </Text>
+                                        <Image source={item.image} style={styles.exerciseImage} />
+                                        <Text style={styles.exerciseName}>{item.name}</Text>
                                     </TouchableOpacity>
                                 )}
                             />
@@ -153,21 +163,20 @@ export default function ExerciseCategoryScreen() {
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={styles.exerciseTypeScroll}
                             >
-                                {filteredItems.map((item) => (
+                                {filteredExerciseTypes.map((item) => (
                                     <TouchableOpacity
                                         key={item}
                                         style={styles.exerciseTypeCard}
+                                        onPress={() => handlePressType(item)}
+                                        activeOpacity={0.85}
                                     >
-                                        <Text style={styles.exerciseTypeText}>
-                                            {item}
-                                        </Text>
+                                        <Text style={styles.exerciseTypeText}>{item}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         )}
                     </View>
                 </View>
-
                 <CustomBottomNavigation />
             </SafeAreaView>
         </>
@@ -192,19 +201,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 24,
     },
-    searchContainer: {
-        marginBottom: 18,
-    },
     tabRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: 16,
-        gap: 10,
+        marginTop: 14,
+        marginBottom: 20,
+        gap: 12,
     },
     tabButton: {
         flex: 1,
         height: 42,
-        borderRadius: 20,
+        borderRadius: 22,
         backgroundColor: "#E5E5E5",
         justifyContent: "center",
         alignItems: "center",
@@ -215,7 +222,7 @@ const styles = StyleSheet.create({
     tabText: {
         color: "#666",
         fontSize: 15,
-        fontWeight: "600",
+        fontWeight: "700",
     },
     activeTabText: {
         color: "#fff",
@@ -227,11 +234,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#2EA7F2",
-        borderRadius: 10,
-        minHeight: 72,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        marginBottom: 10,
+        borderRadius: 14,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+        marginBottom: 14,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -239,15 +245,15 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     exerciseImage: {
-        width: 54,
-        height: 54,
-        borderRadius: 8,
+        width: 64,
+        height: 64,
+        borderRadius: 12,
         marginRight: 14,
         backgroundColor: "#fff",
     },
     exerciseName: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "800",
         color: "#fff",
     },
@@ -256,11 +262,10 @@ const styles = StyleSheet.create({
     },
     exerciseTypeCard: {
         backgroundColor: "#2EA7F2",
-        borderRadius: 10,
-        minHeight: 72,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        marginBottom: 10,
+        borderRadius: 14,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+        marginBottom: 14,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
@@ -272,6 +277,6 @@ const styles = StyleSheet.create({
     exerciseTypeText: {
         color: "#fff",
         fontSize: 18,
-        fontWeight: "bold",
+        fontWeight: "700",
     },
 });
