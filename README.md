@@ -17,7 +17,9 @@
 ## 1. Create the required `.env` files
 Before running the project, create all the necessary `.env` files.
 
-Please refer to the final report document and use the environment variable values provided in the "Important links - Github respository" section
+Please refer to the final report document and use the environment variable values provided in the "Important links - Github respository" section.
+
+Once done, return to README.md file and continue to follow the remaining steps to run the app.
 
 ## 2. Install dependencies
 Open a terminal and run:
