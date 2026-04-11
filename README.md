@@ -17,7 +17,7 @@
 ## 1. Create the required `.env` files
 Before running the project, create all the necessary `.env` files.
 
-Use the environment variable values provided in the final report document.
+Please refer to the final report document and use the environment variable values provided in the "Important links - Github respository" section
 
 ## 2. Install dependencies
 Open a terminal and run:
