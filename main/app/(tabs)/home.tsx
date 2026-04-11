@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useFocusEffect } from "@react-navigation/native";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
 import Calendar from "../../components/Calendar";
 import TodayReportCard from "../../components/TodayReportCard";
@@ -145,12 +144,15 @@ export default function HomePage() {
             ? currentDayHeartRate
             : selectedStoredMetrics.bpm;
 
-    const loadFirstName = async () => {
-        const savedFirstName = await AsyncStorage.getItem("firstName");
-        if (savedFirstName) {
-            setFirstName(savedFirstName);
+    const loadFirstName = useCallback(async () => {
+        try {
+            const savedFirstName = await AsyncStorage.getItem("firstName");
+            const nextValue = savedFirstName?.trim() || "User";
+            setFirstName((prev) => (prev === nextValue ? prev : nextValue));
+        } catch (error) {
+            console.error("Failed to load first name:", error);
         }
-    };
+    }, []);
 
     const saveWorkoutTimers = useCallback(async (timers: WorkoutTimerMap) => {
         try {
@@ -416,7 +418,7 @@ export default function HomePage() {
         loadFirstName();
         loadWorkoutTimers();
         loadDailyMetrics();
-    }, [loadDailyMetrics, loadWorkoutTimers]);
+    }, [loadFirstName, loadWorkoutTimers, loadDailyMetrics]);
 
     useEffect(() => {
         loadCaloriesForSelectedDate();
@@ -438,29 +440,6 @@ export default function HomePage() {
         };
     }, [startBpmInterval, stopBpmInterval]);
 
-    useFocusEffect(
-        useCallback(() => {
-            loadFirstName();
-            loadCaloriesForSelectedDate();
-            loadWorkoutTimers();
-            loadDailyMetrics();
-            initializeHeartRateForSelectedDate();
-            startBpmInterval();
-
-            return () => {
-                stopBpmInterval();
-            };
-        }, [
-            initializeHeartRateForSelectedDate,
-            loadCaloriesForSelectedDate,
-            loadDailyMetrics,
-            loadFirstName,
-            loadWorkoutTimers,
-            startBpmInterval,
-            stopBpmInterval,
-        ])
-    );
-
     useEffect(() => {
         if (selectedWorkoutEntry.isRunning) {
             startWorkoutInterval();
@@ -472,7 +451,6 @@ export default function HomePage() {
             stopWorkoutInterval();
         };
     }, [
-        selectedDateKey,
         selectedWorkoutEntry.isRunning,
         startWorkoutInterval,
         stopWorkoutInterval,
