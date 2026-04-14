@@ -10,40 +10,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import PageHeaderBanner from "../../components/PageHeaderBanner";
-import SearchBar from "../../components/SearchBar";
 
 type ExploreTab = "Muscles" | "Exercise Type";
 
 export default function ExerciseScreen() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<ExploreTab>("Muscles");
-    const [searchQuery, setSearchQuery] = useState("");
 
     const muscles = ["Legs", "Chest", "Back", "Arms", "Shoulders", "Abs"];
     const exerciseTypes = [
         "Machine",
-        "Dumbbell",
-        "Barbell",
-        "Cable",
-        "Bodyweight",
+        "Cables",
+        "Free Weights",
         "Smith Machine",
+        "Functional Exercises",
+        "Cardio",
     ];
 
     const categories = useMemo(() => {
         return activeTab === "Muscles" ? muscles : exerciseTypes;
     }, [activeTab]);
-
-    const filteredCategories = useMemo(() => {
-        const trimmedQuery = searchQuery.trim().toLowerCase();
-
-        if (!trimmedQuery) {
-            return categories;
-        }
-
-        return categories.filter((category) =>
-            category.toLowerCase().includes(trimmedQuery)
-        );
-    }, [categories, searchQuery]);
 
     const handlePressCategory = (category: string) => {
         router.push({
@@ -70,12 +56,6 @@ export default function ExerciseScreen() {
                 />
 
                 <View style={styles.content}>
-                    <SearchBar
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholder={`Search for an ${activeTab === "Muscles" ? "exercise" : "exercise type"}`}
-                    />
-
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[
@@ -118,7 +98,7 @@ export default function ExerciseScreen() {
                         contentContainerStyle={styles.categoryList}
                         showsVerticalScrollIndicator={false}
                     >
-                        {filteredCategories.map((category) => (
+                        {categories.map((category) => (
                             <TouchableOpacity
                                 key={category}
                                 style={styles.categoryButton}
@@ -138,66 +118,61 @@ export default function ExerciseScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#1EA7FF",
+        backgroundColor: "#2EA7F2",
     },
     container: {
         flex: 1,
         backgroundColor: "#F5F5F5",
     },
     headerLogo: {
-        width: 120,
-        height: 120,
+        width: 112,
+        height: 112,
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingHorizontal: 16,
+        paddingTop: 8,
         backgroundColor: "#F5F5F5",
     },
     tabContainer: {
         flexDirection: "row",
-        marginTop: 14,
-        marginBottom: 18,
-        gap: 10,
+        marginTop: 12,
+        marginBottom: 14,
+        gap: 8,
     },
     tabButton: {
         flex: 1,
-        paddingVertical: 10,
-        borderRadius: 20,
-        backgroundColor: "#E5E5E5",
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: "#CFCFCF",
         alignItems: "center",
+        justifyContent: "center",
     },
     activeTabButton: {
-        backgroundColor: "#1EA7FF",
+        backgroundColor: "#2EA7F2",
     },
     tabText: {
-        color: "#666",
-        fontWeight: "600",
+        color: "#666666",
+        fontWeight: "700",
+        fontSize: 13,
     },
     activeTabText: {
-        color: "#fff",
+        color: "#FFFFFF",
     },
     categoryList: {
-        paddingBottom: 20,
+        paddingBottom: 24,
     },
     categoryButton: {
-        backgroundColor: "#1EA7FF",
-        paddingVertical: 24,
-        borderRadius: 14,
+        backgroundColor: "#2EA7F2",
+        minHeight: 70,
+        borderRadius: 8,
         marginBottom: 10,
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
+        justifyContent: "center",
     },
     categoryText: {
-        color: "#fff",
-        fontSize: 18,
+        color: "#FFFFFF",
+        fontSize: 20,
         fontWeight: "700",
     },
 });
