@@ -1,6 +1,7 @@
 # SOEN357-Final-Project-Group-1-Section-V-VA
 
-## FitFuel
+## FitFuel - Overview
+FitFuel is a user-centered fitness application designed to bring the most important parts of a healthy routine into one simple and user friendly platform. It combines three key features in one single application: calorie tracking, workout guidance, and online coaching features. By integrating these essential fitness functions into one place, FitFuel application aims to reduce the need for users to switch between multiple applications, thereby lowering interaction effort and making daily fitness habits easier to maintain. The app was designed with a clean and familiar interface to support usability, motivation, and long-term engagement.
 
 ## Contributors
 
