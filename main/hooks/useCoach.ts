@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { ImageSourcePropType } from "react-native";
 import coachesData from "../data/coaches.json";
+import { getScopedStorageKey } from "@/utils/authStorage";
 
 export type Coach = {
     id: string;
@@ -19,17 +20,25 @@ export type SubscribedCoachRecord = {
     subscribedAt: string;
 };
 
-const SUBSCRIBED_COACHS_KEY = "subscribedCoaches";
-
 const coachImages: Record<string, ImageSourcePropType> = {
     "1": require("../assets/images/coaches/Andy-Griffiths.png"),
     "2": require("../assets/images/coaches/Jessica-Harb.png"),
     "3": require("../assets/images/coaches/Amadou-Ba.png"),
 };
 
+async function getSubscribedCoachStorageKey(): Promise<string | null> {
+    return getScopedStorageKey("subscribedCoaches");
+}
+
 async function readSubscribedCoaches(): Promise<SubscribedCoachRecord[]> {
     try {
-        const storedValue = await AsyncStorage.getItem(SUBSCRIBED_COACHS_KEY);
+        const storageKey = await getSubscribedCoachStorageKey();
+
+        if (!storageKey) {
+            return [];
+        }
+
+        const storedValue = await AsyncStorage.getItem(storageKey);
 
         if (!storedValue) {
             return [];
@@ -57,10 +66,13 @@ async function writeSubscribedCoaches(
     subscribedCoaches: SubscribedCoachRecord[]
 ): Promise<void> {
     try {
-        await AsyncStorage.setItem(
-            SUBSCRIBED_COACHS_KEY,
-            JSON.stringify(subscribedCoaches)
-        );
+        const storageKey = await getSubscribedCoachStorageKey();
+
+        if (!storageKey) {
+            return;
+        }
+
+        await AsyncStorage.setItem(storageKey, JSON.stringify(subscribedCoaches));
     } catch (error) {
         console.error("Failed to save subscribed coaches:", error);
     }
@@ -93,9 +105,7 @@ export function useSubscribedCoachIds(): string[] {
     useEffect(() => {
         const loadSubscribedCoachIds = async () => {
             const subscribedCoaches = await readSubscribedCoaches();
-            setSubscribedCoachIds(
-                subscribedCoaches.map((coach) => coach.coachId)
-            );
+            setSubscribedCoachIds(subscribedCoaches.map((coach) => coach.coachId));
         };
 
         loadSubscribedCoachIds();
@@ -124,9 +134,7 @@ export function useSubscribedCoaches(): SubscribedCoachRecord[] {
 export async function subscribeToCoach(coachId: string): Promise<void> {
     const existingSubscribedCoaches = await readSubscribedCoaches();
 
-    if (
-        existingSubscribedCoaches.some((coach) => coach.coachId === coachId)
-    ) {
+    if (existingSubscribedCoaches.some((coach) => coach.coachId === coachId)) {
         return;
     }
 

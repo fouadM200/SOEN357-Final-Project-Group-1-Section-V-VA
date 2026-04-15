@@ -16,6 +16,7 @@ import TodayReportCard from "../../components/TodayReportCard";
 import WorkoutTimerCard from "../../components/WorkoutTimerCard";
 import calorieTrackerData from "../../data/calorieTrackerData.json";
 import type { MealSection } from "@/types/calorieTracker";
+import { getCurrentUser, getScopedStorageKey } from "@/utils/authStorage";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
 const WORKOUT_TIMER_STORAGE_KEY = "workoutTimerByDate";
@@ -146,8 +147,8 @@ export default function HomePage() {
 
     const loadFirstName = useCallback(async () => {
         try {
-            const savedFirstName = await AsyncStorage.getItem("firstName");
-            const nextValue = savedFirstName?.trim() || "User";
+            const currentUser = await getCurrentUser();
+            const nextValue = currentUser?.firstName?.trim() || "User";
             setFirstName((prev) => (prev === nextValue ? prev : nextValue));
         } catch (error) {
             console.error("Failed to load first name:", error);
@@ -156,10 +157,13 @@ export default function HomePage() {
 
     const saveWorkoutTimers = useCallback(async (timers: WorkoutTimerMap) => {
         try {
-            await AsyncStorage.setItem(
-                WORKOUT_TIMER_STORAGE_KEY,
-                JSON.stringify(timers)
-            );
+            const storageKey = await getScopedStorageKey(WORKOUT_TIMER_STORAGE_KEY);
+
+            if (!storageKey) {
+                return;
+            }
+
+            await AsyncStorage.setItem(storageKey, JSON.stringify(timers));
         } catch (error) {
             console.error("Failed to save workout timer data:", error);
         }
@@ -167,10 +171,13 @@ export default function HomePage() {
 
     const saveDailyMetrics = useCallback(async (metrics: DailyMetricsMap) => {
         try {
-            await AsyncStorage.setItem(
-                DAILY_METRICS_STORAGE_KEY,
-                JSON.stringify(metrics)
-            );
+            const storageKey = await getScopedStorageKey(DAILY_METRICS_STORAGE_KEY);
+
+            if (!storageKey) {
+                return;
+            }
+
+            await AsyncStorage.setItem(storageKey, JSON.stringify(metrics));
         } catch (error) {
             console.error("Failed to save daily metrics:", error);
         }
@@ -178,7 +185,14 @@ export default function HomePage() {
 
     const loadWorkoutTimers = useCallback(async () => {
         try {
-            const savedTimers = await AsyncStorage.getItem(WORKOUT_TIMER_STORAGE_KEY);
+            const storageKey = await getScopedStorageKey(WORKOUT_TIMER_STORAGE_KEY);
+
+            if (!storageKey) {
+                setWorkoutTimersByDate({});
+                return;
+            }
+
+            const savedTimers = await AsyncStorage.getItem(storageKey);
 
             if (!savedTimers) {
                 setWorkoutTimersByDate({});
@@ -195,7 +209,14 @@ export default function HomePage() {
 
     const loadDailyMetrics = useCallback(async () => {
         try {
-            const savedMetrics = await AsyncStorage.getItem(DAILY_METRICS_STORAGE_KEY);
+            const storageKey = await getScopedStorageKey(DAILY_METRICS_STORAGE_KEY);
+
+            if (!storageKey) {
+                setDailyMetricsByDate({});
+                return;
+            }
+
+            const savedMetrics = await AsyncStorage.getItem(storageKey);
 
             if (!savedMetrics) {
                 setDailyMetricsByDate({});
@@ -248,7 +269,14 @@ export default function HomePage() {
 
     const loadCaloriesForSelectedDate = useCallback(async () => {
         try {
-            const savedSectionsByDate = await AsyncStorage.getItem(STORAGE_SECTIONS_KEY);
+            const storageKey = await getScopedStorageKey(STORAGE_SECTIONS_KEY);
+
+            if (!storageKey) {
+                setSectionsForSelectedDate([]);
+                return;
+            }
+
+            const savedSectionsByDate = await AsyncStorage.getItem(storageKey);
 
             if (!savedSectionsByDate) {
                 setSectionsForSelectedDate([]);
@@ -450,11 +478,7 @@ export default function HomePage() {
         return () => {
             stopWorkoutInterval();
         };
-    }, [
-        selectedWorkoutEntry.isRunning,
-        startWorkoutInterval,
-        stopWorkoutInterval,
-    ]);
+    }, [selectedWorkoutEntry.isRunning, startWorkoutInterval, stopWorkoutInterval]);
 
     useEffect(() => {
         return () => {

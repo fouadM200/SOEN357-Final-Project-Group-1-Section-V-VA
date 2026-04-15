@@ -9,7 +9,6 @@ import {
     View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { loginUser } from "@/utils/authStorage";
 
 export default function LoginPage() {
@@ -24,10 +23,6 @@ export default function LoginPage() {
         if (!result.success) {
             Alert.alert("Login failed", result.message ?? "Unknown error");
             return;
-        }
-
-        if (result.user?.firstName) {
-            await AsyncStorage.setItem("firstName", result.user.firstName);
         }
 
         router.push("/(tabs)/home");

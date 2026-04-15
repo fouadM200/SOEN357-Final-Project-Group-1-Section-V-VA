@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getScopedStorageKey } from "@/utils/authStorage";
 
 export type ChatMessage = {
     id: string;
@@ -13,14 +14,23 @@ export type SavedConversation = {
     updatedAt: string;
 };
 
-const getMessagesStorageKey = (coachId: string) => `messages_${coachId}`;
-const CONVERSATIONS_STORAGE_KEY = "saved_conversations";
+async function getMessagesStorageKey(coachId: string): Promise<string | null> {
+    return getScopedStorageKey(`messages_${coachId}`);
+}
+
+async function getConversationsStorageKey(): Promise<string | null> {
+    return getScopedStorageKey("saved_conversations");
+}
 
 export async function getMessages(coachId: string): Promise<ChatMessage[]> {
     try {
-        const storedMessages = await AsyncStorage.getItem(
-            getMessagesStorageKey(coachId)
-        );
+        const storageKey = await getMessagesStorageKey(coachId);
+
+        if (!storageKey) {
+            return [];
+        }
+
+        const storedMessages = await AsyncStorage.getItem(storageKey);
 
         if (!storedMessages) {
             return [];
@@ -39,10 +49,13 @@ export async function saveMessages(
     messages: ChatMessage[]
 ): Promise<void> {
     try {
-        await AsyncStorage.setItem(
-            getMessagesStorageKey(coachId),
-            JSON.stringify(messages)
-        );
+        const storageKey = await getMessagesStorageKey(coachId);
+
+        if (!storageKey) {
+            return;
+        }
+
+        await AsyncStorage.setItem(storageKey, JSON.stringify(messages));
     } catch (error) {
         console.error("Failed to save messages:", error);
     }
@@ -53,6 +66,12 @@ export async function saveConversation(
     lastMessage: string
 ): Promise<void> {
     try {
+        const storageKey = await getConversationsStorageKey();
+
+        if (!storageKey) {
+            return;
+        }
+
         const existingConversations = await getAllConversations();
 
         const updatedConversation: SavedConversation = {
@@ -70,10 +89,7 @@ export async function saveConversation(
             ...filteredConversations,
         ];
 
-        await AsyncStorage.setItem(
-            CONVERSATIONS_STORAGE_KEY,
-            JSON.stringify(updatedConversations)
-        );
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updatedConversations));
     } catch (error) {
         console.error("Failed to save conversation:", error);
     }
@@ -81,9 +97,13 @@ export async function saveConversation(
 
 export async function getAllConversations(): Promise<SavedConversation[]> {
     try {
-        const storedConversations = await AsyncStorage.getItem(
-            CONVERSATIONS_STORAGE_KEY
-        );
+        const storageKey = await getConversationsStorageKey();
+
+        if (!storageKey) {
+            return [];
+        }
+
+        const storedConversations = await AsyncStorage.getItem(storageKey);
 
         if (!storedConversations) {
             return [];
@@ -110,17 +130,21 @@ export async function getAllConversations(): Promise<SavedConversation[]> {
 
 export async function clearConversation(coachId: string): Promise<void> {
     try {
-        await AsyncStorage.removeItem(getMessagesStorageKey(coachId));
+        const messageKey = await getMessagesStorageKey(coachId);
+        const conversationKey = await getConversationsStorageKey();
+
+        if (!messageKey || !conversationKey) {
+            return;
+        }
+
+        await AsyncStorage.removeItem(messageKey);
 
         const existingConversations = await getAllConversations();
         const filteredConversations = existingConversations.filter(
             (conversation) => conversation.coachId !== coachId
         );
 
-        await AsyncStorage.setItem(
-            CONVERSATIONS_STORAGE_KEY,
-            JSON.stringify(filteredConversations)
-        );
+        await AsyncStorage.setItem(conversationKey, JSON.stringify(filteredConversations));
     } catch (error) {
         console.error("Failed to clear conversation:", error);
     }

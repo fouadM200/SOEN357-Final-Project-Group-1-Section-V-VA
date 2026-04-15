@@ -21,6 +21,7 @@ import type {
     Meal,
     MealSection,
 } from "@/types/calorieTracker";
+import { getScopedStorageKey } from "@/utils/authStorage";
 
 const STORAGE_SECTIONS_KEY = "calorieTrackerSectionsByDate";
 const STORAGE_WATER_KEY = "calorieTrackerWaterIntakeByDate";
@@ -65,9 +66,19 @@ export default function CalorieTrackerPage() {
     useEffect(() => {
         const loadStoredData = async () => {
             try {
+                const sectionsStorageKey = await getScopedStorageKey(STORAGE_SECTIONS_KEY);
+                const waterStorageKey = await getScopedStorageKey(STORAGE_WATER_KEY);
+
+                if (!sectionsStorageKey || !waterStorageKey) {
+                    setSectionsByDate({});
+                    setWaterByDate({});
+                    setIsStorageLoaded(true);
+                    return;
+                }
+
                 const [savedSectionsByDate, savedWater] = await Promise.all([
-                    AsyncStorage.getItem(STORAGE_SECTIONS_KEY),
-                    AsyncStorage.getItem(STORAGE_WATER_KEY),
+                    AsyncStorage.getItem(sectionsStorageKey),
+                    AsyncStorage.getItem(waterStorageKey),
                 ]);
 
                 if (savedSectionsByDate) {
@@ -111,8 +122,14 @@ export default function CalorieTrackerPage() {
 
         const saveSectionsByDate = async () => {
             try {
+                const storageKey = await getScopedStorageKey(STORAGE_SECTIONS_KEY);
+
+                if (!storageKey) {
+                    return;
+                }
+
                 await AsyncStorage.setItem(
-                    STORAGE_SECTIONS_KEY,
+                    storageKey,
                     JSON.stringify(sectionsByDate)
                 );
             } catch (error) {
@@ -130,8 +147,14 @@ export default function CalorieTrackerPage() {
 
         const saveWaterByDate = async () => {
             try {
+                const storageKey = await getScopedStorageKey(STORAGE_WATER_KEY);
+
+                if (!storageKey) {
+                    return;
+                }
+
                 await AsyncStorage.setItem(
-                    STORAGE_WATER_KEY,
+                    storageKey,
                     JSON.stringify(waterByDate)
                 );
             } catch (error) {

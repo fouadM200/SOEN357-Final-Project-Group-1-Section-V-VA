@@ -68,6 +68,23 @@ export const getCurrentUser = async (): Promise<User | null> => {
     return data ? JSON.parse(data) : null;
 };
 
+export const getCurrentUserEmail = async (): Promise<string | null> => {
+    const currentUser = await getCurrentUser();
+    return currentUser?.email?.toLowerCase() ?? null;
+};
+
+export const getScopedStorageKey = async (
+    baseKey: string
+): Promise<string | null> => {
+    const email = await getCurrentUserEmail();
+
+    if (!email) {
+        return null;
+    }
+
+    return `${baseKey}_${email}`;
+};
+
 export const logoutUser = async (): Promise<void> => {
     await AsyncStorage.removeItem(CURRENT_USER_KEY);
 };
